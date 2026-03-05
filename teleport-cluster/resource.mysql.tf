@@ -16,16 +16,16 @@ module "mysql" {
     #!/bin/bash
     mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<SQL
     -- Teleport admin user for auto user provisioning
-    CREATE USER 'teleport-admin'@'%' REQUIRE SUBJECT '/CN=teleport-admin';
+    CREATE USER IF NOT EXISTS 'teleport-admin'@'%' REQUIRE SUBJECT '/CN=teleport-admin';
     GRANT SELECT ON mysql.role_edges TO 'teleport-admin'@'%';
     GRANT PROCESS, ROLE_ADMIN, CREATE USER ON *.* TO 'teleport-admin'@'%';
     CREATE DATABASE IF NOT EXISTS \`teleport\`;
     GRANT ALTER ROUTINE, CREATE ROUTINE, EXECUTE ON \`teleport\`.* TO 'teleport-admin'@'%';
 
     -- Roles for auto-provisioned users
-    CREATE ROLE 'admin';
+    CREATE ROLE IF NOT EXISTS 'admin';
     GRANT ALL PRIVILEGES ON \`teleport_db\`.* TO 'admin';
-    CREATE ROLE 'read_only';
+    CREATE ROLE IF NOT EXISTS 'read_only';
     GRANT SELECT ON \`teleport_db\`.* TO 'read_only';
 
     -- Grant teleport-admin the ability to assign roles
@@ -33,7 +33,7 @@ module "mysql" {
     GRANT 'read_only' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
 
     -- Legacy static user
-    CREATE USER 'developer'@'%' REQUIRE SUBJECT '/CN=developer';
+    CREATE USER IF NOT EXISTS 'developer'@'%' REQUIRE SUBJECT '/CN=developer';
     GRANT ALL PRIVILEGES ON *.* TO 'developer'@'%';
 
     -- Seed data

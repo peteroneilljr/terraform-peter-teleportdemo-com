@@ -20,13 +20,11 @@ resource "kubectl_manifest" "sso_okta" {
               "editor",
               "access",
               "reviewer",
-              "access-mcp",
               "${var.resource_prefix}aws-console",
               "${var.resource_prefix}postgresql",
               "${var.resource_prefix}mysql",
               "${var.resource_prefix}mariadb",
               "${var.resource_prefix}k8s",
-              "${var.resource_prefix}vnet",
             ]
           }
         ]

@@ -112,13 +112,13 @@ locals {
 
   seed_movies_mysql_sql = <<-SQL
     CREATE TABLE IF NOT EXISTS top_movies (
-      `rank` INTEGER PRIMARY KEY,
+      \`rank\` INTEGER PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       year INTEGER NOT NULL,
       director VARCHAR(255) NOT NULL
     );
 
-    INSERT INTO top_movies (`rank`, title, year, director) VALUES
+    INSERT INTO top_movies (\`rank\`, title, year, director) VALUES
       (1, 'The Shawshank Redemption', 1994, 'Frank Darabont'),
       (2, 'The Godfather', 1972, 'Francis Ford Coppola'),
       (3, 'The Dark Knight', 2008, 'Christopher Nolan'),
