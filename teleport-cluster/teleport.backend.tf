@@ -1,10 +1,9 @@
 // DynamoDB table for storing cluster state
 resource "aws_dynamodb_table" "teleport_backend" {
-  name           = "${local.teleport_cluster_name}-backend"
-  read_capacity  = 10
-  write_capacity = 10
-  hash_key       = "HashKey"
-  range_key      = "FullPath"
+  name         = "${local.teleport_cluster_name}-backend"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "HashKey"
+  range_key    = "FullPath"
 
   server_side_encryption {
     enabled = true
@@ -36,19 +35,17 @@ resource "aws_dynamodb_table" "teleport_backend" {
     TeleportCluster = local.teleport_cluster_name
   }
 
-  # Prevents Terraform from destroying backend on name change
-  lifecycle {
-    ignore_changes = all
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 // DynamoDB table for storing cluster events
 resource "aws_dynamodb_table" "teleport_events" {
-  name           = "${local.teleport_cluster_name}-events"
-  read_capacity  = 10
-  write_capacity = 10
-  hash_key       = "SessionID"
-  range_key      = "EventIndex"
+  name         = "${local.teleport_cluster_name}-events"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "SessionID"
+  range_key    = "EventIndex"
 
   server_side_encryption {
     enabled = true
@@ -62,8 +59,6 @@ resource "aws_dynamodb_table" "teleport_events" {
     name            = "timesearchV2"
     hash_key        = "CreatedAtDate"
     range_key       = "CreatedAt"
-    write_capacity  = 10
-    read_capacity   = 10
     projection_type = "ALL"
   }
 
@@ -96,20 +91,18 @@ resource "aws_dynamodb_table" "teleport_events" {
     TeleportCluster = local.teleport_cluster_name
   }
 
-  # Prevents Terraform from destroying backend on name change
-  lifecycle {
-    ignore_changes = all
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 resource "aws_s3_bucket" "teleport_sessions" {
   bucket        = "${local.teleport_cluster_name}-sessions"
   force_destroy = true
 
-  # Prevents Terraform from destroying backend on name change
-  lifecycle {
-    ignore_changes = all
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 resource "aws_s3_bucket_acl" "teleport_sessions" {

@@ -42,12 +42,12 @@ locals {
       pacman -Syu sudo --noconfirm && \
       ${local.teleport_managed_updates_entrypoint_sh}
     EOT
-    apt = <<-EOT
+    apt    = <<-EOT
       apt-get update && \
       apt-get install -y curl sudo && \
       ${local.teleport_managed_updates_entrypoint_sh}
     EOT
-    dnf = <<-EOT
+    dnf    = <<-EOT
       dnf update -y && \
       dnf install -y sudo && \
       ${local.teleport_managed_updates_entrypoint_sh}

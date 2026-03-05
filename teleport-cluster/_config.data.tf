@@ -19,6 +19,8 @@ data "aws_route53_zone" "main" {
 data "http" "teleport_db_ca" {
   url = "https://${aws_route53_record.cluster_endpoint.fqdn}/webapi/auth/export?type=db-client"
 
+  request_timeout_ms = 10000
+
   retry {
     attempts     = 30
     min_delay_ms = 10000

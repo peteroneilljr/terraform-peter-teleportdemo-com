@@ -27,61 +27,59 @@ resource "aws_iam_role_policy_attachment" "irsa_attach_dynamodb" {
 resource "aws_iam_policy" "teleport_cluster_dynamodb" {
   name = "${local.teleport_cluster_name}-dynamodb-backend"
 
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllActionsOnTeleportBackendDB",
-            "Effect": "Allow",
-            "Action": [
-                "dynamodb:BatchWriteItem",
-                "dynamodb:UpdateTimeToLive",
-                "dynamodb:PutItem",
-                "dynamodb:DeleteItem",
-                "dynamodb:Scan",
-                "dynamodb:Query",
-                "dynamodb:DescribeStream",
-                "dynamodb:UpdateItem",
-                "dynamodb:DescribeTimeToLive",
-                "dynamodb:DescribeTable",
-                "dynamodb:GetShardIterator",
-                "dynamodb:GetItem",
-                "dynamodb:ConditionCheckItem",
-                "dynamodb:UpdateTable",
-                "dynamodb:GetRecords",
-                "dynamodb:UpdateContinuousBackups"
-            ],
-            "Resource": [
-                "${aws_dynamodb_table.teleport_backend.arn}",
-                "${aws_dynamodb_table.teleport_backend.arn}/*"
-            ]
-        },
-        {
-            "Sid": "AllActionsOnTeleportEventsDB",
-            "Effect": "Allow",
-            "Action": [
-                "dynamodb:BatchWriteItem",
-                "dynamodb:UpdateTimeToLive",
-                "dynamodb:PutItem",
-                "dynamodb:DescribeTable",
-                "dynamodb:DeleteItem",
-                "dynamodb:GetItem",
-                "dynamodb:Scan",
-                "dynamodb:Query",
-                "dynamodb:UpdateItem",
-                "dynamodb:DescribeTimeToLive",
-                "dynamodb:UpdateTable",
-                "dynamodb:UpdateContinuousBackups"
-            ],
-            "Resource": [
-              "${aws_dynamodb_table.teleport_events.arn}",
-              "${aws_dynamodb_table.teleport_events.arn}/*"
-            ]
-        }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllActionsOnTeleportBackendDB"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:BatchWriteItem",
+          "dynamodb:UpdateTimeToLive",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Scan",
+          "dynamodb:Query",
+          "dynamodb:DescribeStream",
+          "dynamodb:UpdateItem",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:DescribeTable",
+          "dynamodb:GetShardIterator",
+          "dynamodb:GetItem",
+          "dynamodb:ConditionCheckItem",
+          "dynamodb:UpdateTable",
+          "dynamodb:GetRecords",
+          "dynamodb:UpdateContinuousBackups",
+        ]
+        Resource = [
+          aws_dynamodb_table.teleport_backend.arn,
+          "${aws_dynamodb_table.teleport_backend.arn}/*",
+        ]
+      },
+      {
+        Sid    = "AllActionsOnTeleportEventsDB"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:BatchWriteItem",
+          "dynamodb:UpdateTimeToLive",
+          "dynamodb:PutItem",
+          "dynamodb:DescribeTable",
+          "dynamodb:DeleteItem",
+          "dynamodb:GetItem",
+          "dynamodb:Scan",
+          "dynamodb:Query",
+          "dynamodb:UpdateItem",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:UpdateTable",
+          "dynamodb:UpdateContinuousBackups",
+        ]
+        Resource = [
+          aws_dynamodb_table.teleport_events.arn,
+          "${aws_dynamodb_table.teleport_events.arn}/*",
+        ]
+      },
     ]
-}
-EOF
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "irsa_attach_s3" {
@@ -91,37 +89,33 @@ resource "aws_iam_role_policy_attachment" "irsa_attach_s3" {
 resource "aws_iam_policy" "teleport_cluster_s3" {
   name = "${local.teleport_cluster_name}-s3-sessions"
 
-  policy = <<EOF
-{
-   "Version": "2012-10-17",
-   "Statement": [
-     {
-       "Effect": "Allow",
-       "Action": [
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
           "s3:ListBucketVersions",
           "s3:ListBucketMultipartUploads",
           "s3:ListBucket",
           "s3:GetEncryptionConfiguration",
-          "s3:GetBucketVersioning"
-      ],
-       "Resource": ["${aws_s3_bucket.teleport_sessions.arn}"]
-     },
-     {
-       "Effect": "Allow",
-       "Action": [
+          "s3:GetBucketVersioning",
+        ]
+        Resource = [aws_s3_bucket.teleport_sessions.arn]
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "s3:GetObjectVersion",
           "s3:GetObjectRetention",
           "s3:GetObject",
           "s3:PutObject",
           "s3:ListMultipartUploadParts",
-          "s3:AbortMultipartUpload"
-       ],
-       "Resource": ["${aws_s3_bucket.teleport_sessions.arn}/*"]
-     }
-   ]
- }
-
-EOF
-
+          "s3:AbortMultipartUpload",
+        ]
+        Resource = ["${aws_s3_bucket.teleport_sessions.arn}/*"]
+      },
+    ]
+  })
 }
 

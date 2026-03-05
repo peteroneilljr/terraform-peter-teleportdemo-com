@@ -16,6 +16,10 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "~> 1.19.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
     # teleport = {
     #   source  = "terraform.releases.teleport.dev/gravitational/teleport"
     #   version = "> 18.0"
@@ -26,6 +30,7 @@ terraform {
 
 provider "tls" {}
 provider "null" {}
+provider "random" {}
 
 provider "aws" {
   profile = var.aws_profile
@@ -49,4 +54,29 @@ provider "kubernetes" {
 provider "kubectl" {
   config_path    = var.k8s_config_path
   config_context = var.k8s_config_context
+}
+
+resource "random_password" "postgres" {
+  length  = 16
+  special = false
+}
+
+resource "random_password" "postgres_superuser" {
+  length  = 16
+  special = false
+}
+
+resource "random_password" "mysql" {
+  length  = 16
+  special = false
+}
+
+resource "random_password" "mariadb" {
+  length  = 16
+  special = false
+}
+
+resource "random_password" "mariadb_root" {
+  length  = 16
+  special = false
 }

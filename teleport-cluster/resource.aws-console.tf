@@ -32,17 +32,16 @@ resource "aws_iam_role_policy_attachment" "irsa_aws_console_ro_policy" {
 resource "aws_iam_policy" "irsa_aws_console_sts_ro" {
   name = "${local.teleport_cluster_name}-aws-console-sts-ro"
 
-  policy = <<EOF
-{ "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Resource": "${aws_iam_role.irsa_aws_console_ro.arn}"
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = aws_iam_role.irsa_aws_console_ro.arn
+      },
+    ]
+  })
 }
 resource "aws_iam_role_policy_attachment" "irsa_aws_console_ro" {
   role       = aws_iam_role.irsa_aws_console_ro.name
@@ -50,41 +49,37 @@ resource "aws_iam_role_policy_attachment" "irsa_aws_console_ro" {
 }
 
 resource "aws_iam_role" "irsa_aws_console_ro" {
-  name               = "${var.resource_prefix}aws-ro"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "AWS": "${aws_iam_role.irsa_aws_console.arn}"
-      }
-    }
-  ]
-}
-EOF
+  name = "${var.resource_prefix}aws-ro"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          AWS = aws_iam_role.irsa_aws_console.arn
+        }
+      },
+    ]
+  })
 }
 # ---------------------------------------------------------------------------- #
 # Admin Role
 # ---------------------------------------------------------------------------- #
 resource "aws_iam_role" "irsa_aws_console_admin" {
-  name               = "${var.resource_prefix}aws-admin"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "AWS": "${aws_iam_role.irsa_aws_console.arn}"
-      }
-    }
-  ]
-}
-EOF
+  name = "${var.resource_prefix}aws-admin"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          AWS = aws_iam_role.irsa_aws_console.arn
+        }
+      },
+    ]
+  })
 }
 resource "aws_iam_role_policy_attachment" "irsa_aws_console_admin" {
   role       = aws_iam_role.irsa_aws_console_admin.name
@@ -94,17 +89,16 @@ resource "aws_iam_role_policy_attachment" "irsa_aws_console_admin" {
 resource "aws_iam_policy" "irsa_aws_console_sts_admin" {
   name = "${local.teleport_cluster_name}-aws-console-sts-admin"
 
-  policy = <<EOF
-{ "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Resource": "${aws_iam_role.irsa_aws_console_admin.arn}"
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = aws_iam_role.irsa_aws_console_admin.arn
+      },
+    ]
+  })
 }
 resource "aws_iam_role_policy_attachment" "irsa_aws_console_admin_policy" {
   role       = aws_iam_role.irsa_aws_console.name
@@ -115,42 +109,38 @@ resource "aws_iam_role_policy_attachment" "irsa_aws_console_admin_policy" {
 # Bedrock Read Only Role
 # ---------------------------------------------------------------------------- #
 resource "aws_iam_role" "irsa_aws_console_bedrock_ro" {
-  name               = "${var.resource_prefix}aws-bedrock-ro"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "AWS": "${aws_iam_role.irsa_aws_console.arn}"
-      }
-    }
-  ]
-}
-EOF
+  name = "${var.resource_prefix}aws-bedrock-ro"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          AWS = aws_iam_role.irsa_aws_console.arn
+        }
+      },
+    ]
+  })
 }
 
 resource "aws_iam_policy" "irsa_aws_console_bedrock_ro" {
   name = "${local.teleport_cluster_name}-aws-console-bedrock-ro"
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock:List*",
-        "bedrock:Get*",
-        "sagemaker:List*"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:List*",
+          "bedrock:Get*",
+          "sagemaker:List*",
+        ]
+        Resource = "*"
+      },
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "irsa_aws_console_bedrock_ro" {
@@ -161,17 +151,16 @@ resource "aws_iam_role_policy_attachment" "irsa_aws_console_bedrock_ro" {
 resource "aws_iam_policy" "irsa_aws_console_sts_bedrock_ro" {
   name = "${local.teleport_cluster_name}-aws-console-sts-bedrock-ro"
 
-  policy = <<EOF
-{ "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Resource": "${aws_iam_role.irsa_aws_console_bedrock_ro.arn}"
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = aws_iam_role.irsa_aws_console_bedrock_ro.arn
+      },
+    ]
+  })
 }
 resource "aws_iam_role_policy_attachment" "irsa_aws_console_bedrock_ro_policy" {
   role       = aws_iam_role.irsa_aws_console.name

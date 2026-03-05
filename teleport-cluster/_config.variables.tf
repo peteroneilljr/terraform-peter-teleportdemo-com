@@ -2,7 +2,7 @@
 # AWS Vars
 # ---------------------------------------------------------------------------- #
 variable "aws_eks_cluster_name" {
-  description = "value"
+  description = "Name of the EKS cluster"
   type        = string
 }
 variable "aws_domain_name" {
@@ -31,7 +31,7 @@ variable "teleport_subdomain" {
 }
 variable "teleport_license_filepath" {
   type        = string
-  description = "description"
+  description = "Path to the Teleport license file"
 }
 variable "teleport_install_CRDs" {
   type        = string

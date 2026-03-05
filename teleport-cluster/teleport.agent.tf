@@ -65,13 +65,13 @@ highAvailability:
 extraVolumes:
 - name: postgres-ca
   secret:
-    secretName: ${module.postgres_tls.secret_name}
+    secretName: ${module.postgres.tls_secret_name}
 - name: mysql-ca
   secret:
-    secretName: ${module.mysql_tls.secret_name}
+    secretName: ${module.mysql.tls_secret_name}
 - name: mariadb-ca
   secret:
-    secretName: ${module.mariadb_tls.secret_name}
+    secretName: ${module.mariadb.tls_secret_name}
 extraVolumeMounts:
 - name: postgres-ca
   mountPath: /var/lib/postgresql/tls
@@ -106,7 +106,7 @@ apps:
 
 databases:
   - name: postgres
-    uri: ${helm_release.postgresql.name}-postgresql.${helm_release.postgresql.namespace}.svc.cluster.local:5432
+    uri: ${module.postgres.helm_release_name}-postgresql.${module.postgres.helm_release_namespace}.svc.cluster.local:5432
     protocol: postgres
     admin_user:
       name: teleport-admin
@@ -117,7 +117,7 @@ databases:
     tls:
       ca_cert_file: /var/lib/postgresql/tls/ca.crt
   - name: mysql
-    uri: ${helm_release.mysql.name}.${helm_release.mysql.namespace}.svc.cluster.local:3306
+    uri: ${module.mysql.helm_release_name}.${module.mysql.helm_release_namespace}.svc.cluster.local:3306
     protocol: mysql
     admin_user:
       name: teleport-admin
@@ -128,7 +128,7 @@ databases:
     tls:
       ca_cert_file: /var/lib/mysql/tls/ca.crt
   - name: mariadb
-    uri: ${helm_release.mariadb.name}.${helm_release.mariadb.namespace}.svc.cluster.local:3306
+    uri: ${module.mariadb.helm_release_name}.${module.mariadb.helm_release_namespace}.svc.cluster.local:3306
     protocol: mysql
     admin_user:
       name: teleport-admin
