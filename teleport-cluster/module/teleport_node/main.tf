@@ -3,16 +3,16 @@ resource "kubernetes_deployment" "this" {
 
   metadata {
     name      = each.value.name
-    namespace = each.value.namespace
+    namespace = var.namespace
     labels = {
       app = each.value.name
     }
   }
 
-  wait_for_rollout = lookup(each.value, "wait_for_rollout", false)
+  wait_for_rollout = each.value.wait_for_rollout
 
   spec {
-    replicas = lookup(each.value, "replicas", 1)
+    replicas = each.value.replicas
 
     selector {
       match_labels = {
@@ -28,22 +28,55 @@ resource "kubernetes_deployment" "this" {
       }
 
       spec {
-        hostname = each.value.name
+        service_account_name = var.service_account_name
+        hostname             = each.value.name
+
         container {
-          name  = each.value.name
-          image = each.value.image
+          name    = each.value.name
+          image   = each.value.image
+          command = ["teleport", "start", "-c", "/etc/teleport.yaml"]
+          args    = length(each.value.teleport_labels) > 0 ? ["--labels=${join(",", [for k, v in each.value.teleport_labels : "${k}=${v}"])}"] : []
 
-          command = lookup(each.value, "command", ["/bin/sh", "-c"])
-          args    = lookup(each.value, "args", [])
+          liveness_probe {
+            tcp_socket {
+              port = 3022
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 10
+          }
 
-          dynamic "env" {
-            for_each = lookup(each.value, "container_env", {})
-            content {
-              name  = env.key
-              value = env.value
+          readiness_probe {
+            tcp_socket {
+              port = 3022
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 5
+          }
+
+          resources {
+            requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            limits = {
+              cpu    = "200m"
+              memory = "256Mi"
             }
           }
 
+          volume_mount {
+            name       = "teleport-config"
+            mount_path = "/etc/teleport.yaml"
+            sub_path   = "teleport.yaml"
+            read_only  = true
+          }
+        }
+
+        volume {
+          name = "teleport-config"
+          config_map {
+            name = var.configmap_name
+          }
         }
       }
     }

@@ -1,4 +1,4 @@
-module "tetris_node" {
+module "pacman_node" {
   source = "./module/teleport_node"
 
   namespace            = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
@@ -6,9 +6,9 @@ module "tetris_node" {
   service_account_name = kubernetes_service_account.teleport_demo_node.metadata[0].name
 
   nodes = {
-    tetris = {
-      name  = "tetris"
-      image = local.node_image_names["tetris"]
+    pacman = {
+      name  = "pacman"
+      image = local.node_image_names["pacman"]
       teleport_labels = {
         access = "restricted"
       }

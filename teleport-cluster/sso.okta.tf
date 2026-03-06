@@ -25,6 +25,7 @@ resource "kubectl_manifest" "sso_okta" {
               "${var.resource_prefix}mysql",
               "${var.resource_prefix}mariadb",
               "${var.resource_prefix}k8s",
+              "${var.resource_prefix}session-join",
             ]
           }
         ]

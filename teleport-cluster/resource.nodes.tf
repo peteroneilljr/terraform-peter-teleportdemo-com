@@ -1,11 +1,3 @@
-resource "random_string" "teleport_node_token" {
-  length  = 32
-  special = false
-  upper   = false
-  lower   = true
-}
-
-
 resource "kubectl_manifest" "teleport_node_token" {
   yaml_body = yamlencode(
     {
@@ -13,14 +5,21 @@ resource "kubectl_manifest" "teleport_node_token" {
       kind       = "TeleportProvisionToken"
 
       metadata = {
-        name      = random_string.teleport_node_token.result
-        namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+        name      = "teleport-demo-nodes"
+        namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0]
       }
 
       spec = {
         roles       = ["Node"]
-        join_method = "token"
-
+        join_method = "kubernetes"
+        kubernetes = {
+          type = "in_cluster"
+          allow = [
+            {
+              service_account = "${kubernetes_namespace_v1.teleport_cluster.metadata[0]}:teleport-demo-node"
+            }
+          ]
+        }
       }
     }
   )
@@ -30,57 +29,67 @@ resource "kubectl_manifest" "teleport_node_token" {
   ]
 }
 
-locals {
-  teleport_managed_updates_entrypoint_sh = <<-EOT
-    curl -o teleport-update.tgz https://cdn.teleport.dev/teleport-update-v${var.teleport_version}-linux-amd64-bin.tar.gz && \
-    tar xf teleport-update.tgz && cd ./teleport && \
-    ./teleport-update enable --proxy ${local.teleport_cluster_fqdn} && \
-    /usr/local/bin/teleport start --roles=node --auth-server=${local.teleport_cluster_fqdn}:443 --token=${random_string.teleport_node_token.result}
-  EOT
-  pkg_entrypoint = {
-    pacman = <<-EOT
-      pacman -Syu sudo --noconfirm && \
-      ${local.teleport_managed_updates_entrypoint_sh}
-    EOT
-    apt    = <<-EOT
-      apt-get update && \
-      apt-get install -y curl sudo && \
-      ${local.teleport_managed_updates_entrypoint_sh}
-    EOT
-    dnf    = <<-EOT
-      dnf update -y && \
-      dnf install -y sudo && \
-      ${local.teleport_managed_updates_entrypoint_sh}
-    EOT
+resource "kubernetes_config_map" "teleport_node_config" {
+  metadata {
+    name      = "teleport-node-config"
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0]
   }
+
+  data = {
+    "teleport.yaml" = yamlencode({
+      version = "v3"
+      teleport = {
+        proxy_server = "${local.teleport_cluster_fqdn}:443"
+        join_params = {
+          method     = "kubernetes"
+          token_name = "teleport-demo-nodes"
+        }
+      }
+      ssh_service = {
+        enabled = true
+      }
+    })
+  }
+}
+
+resource "kubernetes_service_account" "teleport_demo_node" {
+  metadata {
+    name      = "teleport-demo-node"
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0]
+  }
+}
+
+locals {
   node_definitions = {
-    rocky9     = { image = "rockylinux:9", pkg = "dnf" }
-    rocky8     = { image = "rockylinux:8", pkg = "dnf" }
-    fedora43   = { image = "fedora:43", pkg = "dnf" }
-    fedora42   = { image = "fedora:42", pkg = "dnf" }
-    ubuntu2404 = { image = "ubuntu:24.04", pkg = "apt" }
-    ubuntu2204 = { image = "ubuntu:22.04", pkg = "apt" }
-    ubuntu1604 = { image = "ubuntu:16.04", pkg = "apt" }
-    debian11   = { image = "debian:11", pkg = "apt" }
-    debian12   = { image = "debian:12", pkg = "apt" }
-    archlinux  = { image = "archlinux:latest", pkg = "pacman" }
+    rocky9     = { image = local.node_image_names["rocky9"] }
+    rocky8     = { image = local.node_image_names["rocky8"] }
+    fedora43   = { image = local.node_image_names["fedora43"] }
+    al2023     = { image = local.node_image_names["al2023"] }
+    ubuntu2404 = { image = local.node_image_names["ubuntu2404"] }
+    ubuntu2204 = { image = local.node_image_names["ubuntu2204"] }
+    debian12   = { image = local.node_image_names["debian12"] }
+    alpine321  = { image = local.node_image_names["alpine321"] }
+    opensuse16 = { image = local.node_image_names["opensuse16"] }
+    archlinux  = { image = local.node_image_names["archlinux"] }
   }
 }
 
 module "teleport_nodes" {
   source = "./module/teleport_node"
 
+  namespace            = kubernetes_namespace_v1.teleport_cluster.metadata[0]
+  configmap_name       = kubernetes_config_map.teleport_node_config.metadata[0]
+  service_account_name = kubernetes_service_account.teleport_demo_node.metadata[0]
+
   nodes = {
     for name, cfg in local.node_definitions : name => {
-      name      = name
-      namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
-      image     = cfg.image
-      command   = ["/bin/bash", "-c"]
-      args      = [local.pkg_entrypoint[cfg.pkg]]
+      name  = name
+      image = cfg.image
     }
   }
 
   depends_on = [
-    helm_release.teleport_cluster
+    helm_release.teleport_cluster,
+    kubectl_manifest.teleport_node_token,
   ]
 }

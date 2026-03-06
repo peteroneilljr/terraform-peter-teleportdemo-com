@@ -1,15 +1,25 @@
+variable "namespace" {
+  type        = string
+  description = "Kubernetes namespace for demo nodes"
+}
+
+variable "configmap_name" {
+  type        = string
+  description = "Name of the ConfigMap containing teleport.yaml"
+}
+
+variable "service_account_name" {
+  type        = string
+  description = "Name of the Kubernetes ServiceAccount for demo nodes"
+}
+
 variable "nodes" {
   type = map(object({
     name             = string
-    namespace        = string
     image            = string
-    labels           = optional(list(string), [])
-    command          = optional(list(string), ["/bin/sh", "-c"])
-    args             = optional(list(string), [])
+    teleport_labels  = optional(map(string), {})
     replicas         = optional(number, 1)
     wait_for_rollout = optional(bool, false)
-    container_env    = optional(map(string), {})
   }))
-
   default = {}
 }
