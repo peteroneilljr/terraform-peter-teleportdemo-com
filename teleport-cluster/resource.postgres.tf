@@ -35,6 +35,24 @@ module "postgres" {
 
     ${local.seed_movies_postgres_sql}
     SQL
+
+    # Create Coder database and user
+    PGPASSWORD="$POSTGRESQL_POSTGRES_PASSWORD" psql -U postgres -v ON_ERROR_STOP=1 <<SQL
+    SELECT 'CREATE DATABASE coder' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'coder')\gexec
+    DO \$\$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'coder') THEN
+        CREATE USER coder WITH PASSWORD '${random_password.coder_db.result}';
+      END IF;
+    END
+    \$\$;
+    GRANT ALL PRIVILEGES ON DATABASE coder TO coder;
+    SQL
+
+    # Grant coder user ownership of public schema in coder database
+    PGPASSWORD="$POSTGRESQL_POSTGRES_PASSWORD" psql -U postgres -d coder -v ON_ERROR_STOP=1 <<SQL
+    ALTER SCHEMA public OWNER TO coder;
+    SQL
   EOF
 
   chart_values = <<-EOF
@@ -74,6 +92,7 @@ module "postgres" {
         local all all trust
         hostssl all teleport-admin all cert
         hostssl all developer all md5
+        hostssl coder coder all md5
         hostssl all all all cert
       persistence:
           enabled: false

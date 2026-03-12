@@ -105,3 +105,19 @@ variable "google_entity_descriptor" {
   type        = string
   description = "Google Entity Descriptor URL"
 }
+# ---------------------------------------------------------------------------- #
+# MongoDB Atlas Vars
+# ---------------------------------------------------------------------------- #
+variable "mongodbatlas_project_id" {
+  type        = string
+  description = "MongoDB Atlas Project ID"
+}
+variable "mongodbatlas_client_id" {
+  type        = string
+  description = "MongoDB Atlas API public key"
+}
+variable "mongodbatlas_client_secret" {
+  type        = string
+  sensitive   = true
+  description = "MongoDB Atlas API private key"
+}

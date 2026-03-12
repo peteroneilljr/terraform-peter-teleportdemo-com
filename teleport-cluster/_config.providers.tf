@@ -24,6 +24,10 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "~> 3.6"
     }
+    mongodbatlas = {
+      source  = "mongodb/mongodbatlas"
+      version = "~> 2.6"
+    }
     # teleport = {
     #   source  = "terraform.releases.teleport.dev/gravitational/teleport"
     #   version = "> 18.0"
@@ -60,6 +64,11 @@ provider "kubectl" {
   config_context = var.k8s_config_context
 }
 
+provider "mongodbatlas" {
+  client_id     = var.mongodbatlas_client_id
+  client_secret = var.mongodbatlas_client_secret
+}
+
 provider "docker" {
   host = "ssh://clairefox@sparky"
 
@@ -90,6 +99,11 @@ resource "random_password" "mariadb" {
 }
 
 resource "random_password" "mariadb_root" {
+  length  = 16
+  special = false
+}
+
+resource "random_password" "coder_db" {
   length  = 16
   special = false
 }

@@ -51,8 +51,8 @@ resource "kubectl_manifest" "teleport_role_restricted_requester" {
   })
 }
 
-# Role that allows joining any active SSH session as observer or peer
-resource "kubectl_manifest" "teleport_role_session_join" {
+# Role that allows observing any active session (GitHub users)
+resource "kubectl_manifest" "teleport_role_session_observe" {
   yaml_body = yamlencode({
     apiVersion = "resources.teleport.dev/v1"
     kind       = "TeleportRoleV7"
@@ -62,16 +62,43 @@ resource "kubectl_manifest" "teleport_role_session_join" {
       }
       finalizers = ["resources.teleport.dev/deletion"]
       generation = 1
-      name       = "${var.resource_prefix}session-join"
+      name       = "${var.resource_prefix}session-observe"
       namespace  = helm_release.teleport_cluster.namespace
     }
     spec = {
       allow = {
         join_sessions = [{
-          name  = "Join any SSH session"
+          name  = "Observe any session"
           roles = ["*"]
-          kinds = ["ssh"]
-          modes = ["observer", "peer"]
+          kinds = ["*"]
+          modes = ["observer"]
+        }]
+      }
+    }
+  })
+}
+
+# Role that allows full session moderation (Okta users)
+resource "kubectl_manifest" "teleport_role_session_moderate" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportRoleV7"
+    metadata = {
+      annotations = {
+        "teleport.dev/keep" = "true"
+      }
+      finalizers = ["resources.teleport.dev/deletion"]
+      generation = 1
+      name       = "${var.resource_prefix}session-moderate"
+      namespace  = helm_release.teleport_cluster.namespace
+    }
+    spec = {
+      allow = {
+        join_sessions = [{
+          name  = "Moderate any session"
+          roles = ["*"]
+          kinds = ["*"]
+          modes = ["observer", "peer", "moderator"]
         }]
       }
     }

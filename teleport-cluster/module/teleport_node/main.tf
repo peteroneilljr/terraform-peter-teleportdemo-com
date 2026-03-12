@@ -32,24 +32,27 @@ resource "kubernetes_deployment" "this" {
         hostname             = each.value.name
 
         container {
-          name    = each.value.name
-          image   = each.value.image
-          command = ["teleport", "start", "-c", "/etc/teleport.yaml"]
+          name              = each.value.name
+          image             = each.value.image
+          image_pull_policy = "Always"
+          command           = ["teleport", "start", "-c", "/etc/teleport.yaml"]
           args    = length(each.value.teleport_labels) > 0 ? ["--labels=${join(",", [for k, v in each.value.teleport_labels : "${k}=${v}"])}"] : []
 
           liveness_probe {
-            tcp_socket {
-              port = 3022
+            http_get {
+              path = "/readyz"
+              port = 3000
             }
-            initial_delay_seconds = 10
+            initial_delay_seconds = 15
             period_seconds        = 10
           }
 
           readiness_probe {
-            tcp_socket {
-              port = 3022
+            http_get {
+              path = "/readyz"
+              port = 3000
             }
-            initial_delay_seconds = 5
+            initial_delay_seconds = 10
             period_seconds        = 5
           }
 

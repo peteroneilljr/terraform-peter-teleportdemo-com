@@ -103,6 +103,20 @@ apps:
     uri: "https://console.aws.amazon.com/bedrock"
     labels:
       app: bedrock
+  - name: coder
+    public_addr: "coder.${local.teleport_cluster_fqdn}"
+    uri: http://coder.coder.svc.cluster.local
+    labels:
+      env: dev
+      host: k8s
+      app: coder
+  - name: swagger-ui
+    public_addr: "swagger-ui.${local.teleport_cluster_fqdn}"
+    uri: http://psh-swagger-ui.${kubernetes_namespace_v1.teleport_cluster.metadata[0].name}.svc.cluster.local:8080
+    labels:
+      env: dev
+      host: k8s
+      app: swagger-ui
 
 databases:
   - name: postgres
@@ -138,6 +152,13 @@ databases:
       db: mariadb
     tls:
       ca_cert_file: /var/lib/mariadb/tls/ca.crt
+  - name: mongodb-atlas
+    uri: "${mongodbatlas_advanced_cluster.mongodb.connection_strings.standard_srv}"
+    protocol: mongodb
+    static_labels:
+      env: dev
+      host: atlas
+      db: mongodb
 EOF
   ]
 }

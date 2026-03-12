@@ -26,12 +26,10 @@ resource "kubectl_manifest" "sso_github" {
       }
 
       spec = {
-        api_endpoint_url = "https://api.github.com"
-        client_id        = var.github_client_id
-        client_secret    = "secret://${kubernetes_secret.sso_github.metadata[0].name}/client_secret"
-        display          = "GitHub"
-        endpoint_url     = "https://github.com"
-        redirect_url     = "https://${local.teleport_cluster_fqdn}:443/v1/webapi/github/callback"
+        client_id     = var.github_client_id
+        client_secret = "secret://${kubernetes_secret.sso_github.metadata[0].name}/client_secret"
+        display       = "GitHub"
+        redirect_url  = "https://${local.teleport_cluster_fqdn}:443/v1/webapi/github/callback"
         client_redirect_settings = {
           allowed_https_hostnames = [
             "${local.teleport_cluster_fqdn}:443"
@@ -39,22 +37,37 @@ resource "kubectl_manifest" "sso_github" {
         }
         teams_to_roles = [
           {
-            organization = "peteroneilljr-org"
+            organization = var.github_org
             team         = "operators"
             roles = [
-              "${var.resource_prefix}aws-console",
-              "${var.resource_prefix}postgresql",
-              "${var.resource_prefix}mysql",
-              "${var.resource_prefix}mariadb",
-              "${var.resource_prefix}k8s",
-              "${var.resource_prefix}vnet",
-              "reviewer",
-              "access",
-              "editor"
+              # Databases (read-only)
+              "${var.resource_prefix}postgresql-ro",
+              "${var.resource_prefix}mysql-ro",
+              "${var.resource_prefix}mariadb-ro",
+              "${var.resource_prefix}mongodb-ro",
+              # Kubernetes (read-only)
+              "${var.resource_prefix}k8s-ro",
+              # AWS (read-only)
+              "${var.resource_prefix}aws-console-ro",
+              "${var.resource_prefix}aws-bedrock-ro",
+              # Apps
+              "${var.resource_prefix}swagger-ui",
+              "${var.resource_prefix}coder",
+              # SSH (one node, visitor user)
+              "${var.resource_prefix}nodes-ro",
+              # Session observation
+              "${var.resource_prefix}session-observe",
+              # Access requests (can request admin roles, approved by Okta admins)
+              "${var.resource_prefix}requester",
             ]
           }
         ]
       }
     }
   )
+}
+
+output "github_oauth_callback_url" {
+  value       = "https://${local.teleport_cluster_fqdn}:443/v1/webapi/github/callback"
+  description = "Authorization callback URL for the GitHub OAuth App"
 }
