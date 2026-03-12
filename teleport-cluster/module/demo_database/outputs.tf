@@ -13,3 +13,8 @@ output "helm_release_name" {
 output "helm_release_namespace" {
   value = helm_release.db.namespace
 }
+
+output "ca_cert_pem" {
+  value     = module.tls.ca_cert_pem
+  sensitive = true
+}
