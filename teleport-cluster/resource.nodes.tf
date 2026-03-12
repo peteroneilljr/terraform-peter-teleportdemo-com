@@ -169,21 +169,105 @@ locals {
         philosophy    = "keep-it-simple"
       }
     }
+    pacman = {
+      image = local.node_image_names["pacman"]
+      teleport_labels = {
+        access = "restricted"
+      }
+    }
+    tetris = {
+      image = local.node_image_names["tetris"]
+      teleport_labels = {
+        access = "restricted"
+      }
+    }
   }
 }
 
-module "teleport_nodes" {
-  source = "./module/teleport_node"
+resource "kubernetes_deployment" "teleport_node" {
+  for_each = local.node_definitions
 
-  namespace            = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
-  configmap_name       = kubernetes_config_map.teleport_node_config.metadata[0].name
-  service_account_name = kubernetes_service_account.teleport_demo_node.metadata[0].name
+  metadata {
+    name      = each.key
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    labels = {
+      app = each.key
+    }
+  }
 
-  nodes = {
-    for name, cfg in local.node_definitions : name => {
-      name            = name
-      image           = cfg.image
-      teleport_labels = cfg.teleport_labels
+  wait_for_rollout = false
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = each.key
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = each.key
+        }
+      }
+
+      spec {
+        service_account_name = kubernetes_service_account.teleport_demo_node.metadata[0].name
+        hostname             = each.key
+
+        container {
+          name              = each.key
+          image             = each.value.image
+          image_pull_policy = "Always"
+          command           = ["teleport", "start", "-c", "/etc/teleport.yaml"]
+          args              = length(each.value.teleport_labels) > 0 ? ["--labels=${join(",", [for k, v in each.value.teleport_labels : "${k}=${v}"])}"] : []
+
+          liveness_probe {
+            http_get {
+              path = "/readyz"
+              port = 3000
+            }
+            initial_delay_seconds = 15
+            period_seconds        = 10
+          }
+
+          readiness_probe {
+            http_get {
+              path = "/readyz"
+              port = 3000
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 5
+          }
+
+          resources {
+            requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            limits = {
+              cpu    = "200m"
+              memory = "256Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "teleport-config"
+            mount_path = "/etc/teleport.yaml"
+            sub_path   = "teleport.yaml"
+            read_only  = true
+          }
+        }
+
+        volume {
+          name = "teleport-config"
+          config_map {
+            name = kubernetes_config_map.teleport_node_config.metadata[0].name
+          }
+        }
+      }
     }
   }
 
