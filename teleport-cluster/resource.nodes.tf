@@ -67,49 +67,27 @@ resource "kubernetes_service_account" "teleport_demo_node" {
 }
 
 locals {
+  teleport_tarball_url = "https://cdn.teleport.dev/teleport-v${var.teleport_version}-linux-amd64-bin.tar.gz"
+
+  # Common install snippets
+  apt_install_teleport = "apt-get update && apt-get install -y --no-install-recommends curl sudo ca-certificates && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
+  dnf_install_teleport = "dnf install -y sudo tar && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
+
   node_definitions = {
-    rocky9 = {
-      image = local.node_image_names["rocky9"]
+    debian12 = {
+      image       = "debian:12"
+      install_cmd = local.apt_install_teleport
       teleport_labels = {
-        distro_family = "rhel"
-        mascot        = "Rocky Raccoon"
-        founded       = "2021"
-        pkg_mgr       = "dnf"
-        init          = "systemd"
-      }
-    }
-    rocky8 = {
-      image = local.node_image_names["rocky8"]
-      teleport_labels = {
-        distro_family = "rhel"
-        mascot        = "Rocky Raccoon"
-        founded       = "2021"
-        pkg_mgr       = "dnf"
-        init          = "systemd"
-      }
-    }
-    fedora43 = {
-      image = local.node_image_names["fedora43"]
-      teleport_labels = {
-        distro_family = "rhel"
-        mascot        = "Fedora Bead"
-        founded       = "2003"
-        pkg_mgr       = "dnf"
-        init          = "systemd"
-      }
-    }
-    al2023 = {
-      image = local.node_image_names["al2023"]
-      teleport_labels = {
-        distro_family = "rhel"
-        mascot        = "Peccy the Penguin"
-        founded       = "2023"
-        pkg_mgr       = "dnf"
-        cloud         = "aws"
+        distro_family = "debian"
+        mascot        = "Bookworm"
+        founded       = "1993"
+        pkg_mgr       = "apt"
+        philosophy    = "free-as-in-freedom"
       }
     }
     ubuntu2404 = {
-      image = local.node_image_names["ubuntu2404"]
+      image       = "ubuntu:24.04"
+      install_cmd = local.apt_install_teleport
       teleport_labels = {
         hostname      = "ubuntu2404"
         distro_family = "debian"
@@ -120,7 +98,8 @@ locals {
       }
     }
     ubuntu2204 = {
-      image = local.node_image_names["ubuntu2204"]
+      image       = "ubuntu:22.04"
+      install_cmd = local.apt_install_teleport
       teleport_labels = {
         distro_family = "debian"
         mascot        = "Jammy Jellyfish"
@@ -129,28 +108,53 @@ locals {
         default_shell = "bash"
       }
     }
-    debian12 = {
-      image = local.node_image_names["debian12"]
+    rocky9 = {
+      image       = "rockylinux:9"
+      install_cmd = local.dnf_install_teleport
       teleport_labels = {
-        distro_family = "debian"
-        mascot        = "Bookworm"
-        founded       = "1993"
-        pkg_mgr       = "apt"
-        philosophy    = "free-as-in-freedom"
+        distro_family = "rhel"
+        mascot        = "Rocky Raccoon"
+        founded       = "2021"
+        pkg_mgr       = "dnf"
+        init          = "systemd"
       }
     }
-    alpine321 = {
-      image = local.node_image_names["alpine321"]
+    rocky8 = {
+      image       = "rockylinux:8"
+      install_cmd = local.dnf_install_teleport
       teleport_labels = {
-        distro_family = "independent"
-        mascot        = "Alpine Ibex"
-        founded       = "2005"
-        pkg_mgr       = "apk"
-        libc          = "musl"
+        distro_family = "rhel"
+        mascot        = "Rocky Raccoon"
+        founded       = "2021"
+        pkg_mgr       = "dnf"
+        init          = "systemd"
+      }
+    }
+    fedora43 = {
+      image       = "fedora:43"
+      install_cmd = local.dnf_install_teleport
+      teleport_labels = {
+        distro_family = "rhel"
+        mascot        = "Fedora Bead"
+        founded       = "2003"
+        pkg_mgr       = "dnf"
+        init          = "systemd"
+      }
+    }
+    al2023 = {
+      image       = "amazonlinux:2023"
+      install_cmd = "dnf install -y sudo tar gzip && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
+      teleport_labels = {
+        distro_family = "rhel"
+        mascot        = "Peccy the Penguin"
+        founded       = "2023"
+        pkg_mgr       = "dnf"
+        cloud         = "aws"
       }
     }
     opensuse16 = {
-      image = local.node_image_names["opensuse16"]
+      image       = "opensuse/leap:16.0"
+      install_cmd = "zypper install -y sudo curl tar gzip && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
       teleport_labels = {
         distro_family = "suse"
         mascot        = "Geeko the Chameleon"
@@ -160,7 +164,8 @@ locals {
       }
     }
     archlinux = {
-      image = local.node_image_names["archlinux"]
+      image       = "archlinux:latest"
+      install_cmd = "pacman -Sy --noconfirm sudo curl tar && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
       teleport_labels = {
         distro_family = "independent"
         mascot        = "Archie"
@@ -169,14 +174,16 @@ locals {
         philosophy    = "keep-it-simple"
       }
     }
-    pacman = {
-      image = local.node_image_names["pacman"]
+    tetris = {
+      image       = "debian:12"
+      install_cmd = "apt-get update && apt-get install -y --no-install-recommends curl sudo ca-certificates bastet && echo '[ -t 0 ] && exec /usr/games/bastet' >> /root/.profile && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
       teleport_labels = {
         access = "restricted"
       }
     }
-    tetris = {
-      image = local.node_image_names["tetris"]
+    pacman = {
+      image       = "debian:12"
+      install_cmd = "apt-get update && apt-get install -y --no-install-recommends curl sudo ca-certificates build-essential libncurses-dev git && git clone --depth 1 https://github.com/kragen/myman.git /tmp/myman && cd /tmp/myman && ./configure --disable-variants && make -j$(nproc) && make install && cd / && rm -rf /tmp/myman && echo '[ -t 0 ] && exec myman -z big' >> /root/.profile && curl -sLO ${local.teleport_tarball_url} && tar xf *.tar.gz && ./teleport/install && rm -rf teleport *.tar.gz"
       teleport_labels = {
         access = "restricted"
       }
@@ -220,16 +227,18 @@ resource "kubernetes_deployment" "teleport_node" {
         container {
           name              = each.key
           image             = each.value.image
-          image_pull_policy = "Always"
-          command           = ["teleport", "start", "-c", "/etc/teleport.yaml"]
-          args              = length(each.value.teleport_labels) > 0 ? ["--labels=${join(",", [for k, v in each.value.teleport_labels : "${k}=${v}"])}"] : []
+          image_pull_policy = "IfNotPresent"
+          command           = ["/bin/sh", "-c"]
+          args = [
+            "${each.value.install_cmd} && exec teleport start -c /etc/teleport.yaml ${length(each.value.teleport_labels) > 0 ? "'--labels=${join(",", [for k, v in each.value.teleport_labels : "${k}=${v}"])}'" : ""}"
+          ]
 
           liveness_probe {
             http_get {
               path = "/readyz"
               port = 3000
             }
-            initial_delay_seconds = 15
+            initial_delay_seconds = 180
             period_seconds        = 10
           }
 
@@ -238,7 +247,7 @@ resource "kubernetes_deployment" "teleport_node" {
               path = "/readyz"
               port = 3000
             }
-            initial_delay_seconds = 10
+            initial_delay_seconds = 120
             period_seconds        = 5
           }
 
@@ -248,8 +257,8 @@ resource "kubernetes_deployment" "teleport_node" {
               memory = "128Mi"
             }
             limits = {
-              cpu    = "200m"
-              memory = "256Mi"
+              cpu    = "500m"
+              memory = "512Mi"
             }
           }
 

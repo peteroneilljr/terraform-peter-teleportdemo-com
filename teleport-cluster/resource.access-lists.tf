@@ -60,11 +60,11 @@ resource "kubectl_manifest" "access_list_database_admins" {
       }
       audit = {
         recurrence = {
-          frequency    = 3
+          frequency    = "3"
           day_of_month = "1"
         }
         notifications = {
-          start = "30d"
+          start = "720h"
         }
       }
     }
@@ -109,11 +109,11 @@ resource "kubectl_manifest" "access_list_infra_operators" {
       }
       audit = {
         recurrence = {
-          frequency    = 1
+          frequency    = "1"
           day_of_month = "1"
         }
         notifications = {
-          start = "30d"
+          start = "720h"
         }
       }
     }
@@ -157,11 +157,11 @@ resource "kubectl_manifest" "access_list_restricted_node_access" {
       }
       audit = {
         recurrence = {
-          frequency    = 1
+          frequency    = "1"
           day_of_month = "1"
         }
         notifications = {
-          start = "30d"
+          start = "720h"
         }
       }
     }

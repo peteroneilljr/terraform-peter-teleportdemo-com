@@ -20,10 +20,6 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.6"
-    }
     mongodbatlas = {
       source  = "mongodb/mongodbatlas"
       version = "~> 2.6"
@@ -67,15 +63,6 @@ provider "kubectl" {
 provider "mongodbatlas" {
   client_id     = var.mongodbatlas_client_id
   client_secret = var.mongodbatlas_client_secret
-}
-
-provider "docker" {
-  host = "ssh://clairefox@sparky"
-
-  registry_auth {
-    address     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com"
-    config_file = pathexpand("~/.docker/config.json")
-  }
 }
 
 resource "random_password" "postgres" {
