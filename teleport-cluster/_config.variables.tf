@@ -36,7 +36,7 @@ variable "teleport_license_filepath" {
 variable "teleport_install_CRDs" {
   type        = string
   default     = "dynamic"
-  description = "Choose the CRD installation option, always, dynamic or never"
+  description = "CRD install mode for the main teleport-cluster chart operator (CRDs are primarily managed by helm_release.teleport_crds)"
 }
 
 variable "teleport_version" {

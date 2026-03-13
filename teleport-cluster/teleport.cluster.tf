@@ -82,6 +82,7 @@ resource "helm_release" "teleport_cluster" {
   depends_on = [
     aws_iam_role_policy_attachment.irsa_attach_dynamodb,
     aws_iam_role_policy_attachment.irsa_attach_s3,
+    helm_release.teleport_crds,
   ]
 }
 # ---------------------------------------------------------------------------- #
