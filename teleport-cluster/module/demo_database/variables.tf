@@ -43,6 +43,12 @@ variable "chart_values" {
   description = "Helm chart values YAML"
 }
 
+variable "tls_secret_name" {
+  type        = string
+  description = "Override the TLS secret name (defaults to {resource_prefix}{db_type}-tls)"
+  default     = null
+}
+
 variable "teleport_role_spec" {
   type        = any
   description = "Spec block for the TeleportRoleV7 resource"

@@ -58,7 +58,7 @@ locals {
 variable "resource_prefix" {
   description = "Prefix to use for all resources"
   type        = string
-  default     = "teleport-"
+  default     = ""
 }
 # ---------------------------------------------------------------------------- #
 # Github Connector
@@ -74,6 +74,23 @@ variable "github_client_id" {
 variable "github_org" {
   description = "github organization to use for teleport"
   type        = string
+}
+# ---------------------------------------------------------------------------- #
+# Coder Github OAuth
+# ---------------------------------------------------------------------------- #
+variable "coder_github_client_id" {
+  description = "GitHub OAuth App client ID for Coder"
+  type        = string
+}
+variable "coder_github_client_secret" {
+  description = "GitHub OAuth App client secret for Coder"
+  type        = string
+  sensitive   = true
+}
+variable "coder_session_token" {
+  description = "Coder API session token for template management"
+  type        = string
+  sensitive   = true
 }
 # ---------------------------------------------------------------------------- #
 # Okta Vars

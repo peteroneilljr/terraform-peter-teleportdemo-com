@@ -1,3 +1,12 @@
+resource "kubernetes_namespace_v1" "teleport_nodes" {
+  metadata {
+    name = "psh-nodes"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "baseline"
+    }
+  }
+}
+
 resource "kubectl_manifest" "teleport_node_token" {
   yaml_body = yamlencode(
     {
@@ -16,7 +25,7 @@ resource "kubectl_manifest" "teleport_node_token" {
           type = "in_cluster"
           allow = [
             {
-              service_account = "${kubernetes_namespace_v1.teleport_cluster.metadata[0].name}:teleport-demo-node"
+              service_account = "${kubernetes_namespace_v1.teleport_nodes.metadata[0].name}:teleport-demo-node"
             }
           ]
         }
@@ -32,7 +41,7 @@ resource "kubectl_manifest" "teleport_node_token" {
 resource "kubernetes_config_map" "teleport_node_config" {
   metadata {
     name      = "teleport-node-config"
-    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    namespace = kubernetes_namespace_v1.teleport_nodes.metadata[0].name
   }
 
   data = {
@@ -62,7 +71,7 @@ resource "kubernetes_config_map" "teleport_node_config" {
 resource "kubernetes_service_account" "teleport_demo_node" {
   metadata {
     name      = "teleport-demo-node"
-    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    namespace = kubernetes_namespace_v1.teleport_nodes.metadata[0].name
   }
 }
 
@@ -196,7 +205,7 @@ resource "kubernetes_deployment" "teleport_node" {
 
   metadata {
     name      = each.key
-    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    namespace = kubernetes_namespace_v1.teleport_nodes.metadata[0].name
     labels = {
       app = each.key
     }

@@ -30,7 +30,7 @@ resource "kubectl_manifest" "teleport_agent" {
 }
 
 locals {
-  teleport_agent_name = "${var.resource_prefix}teleport-agent"
+  teleport_agent_name = "psh-teleport-agent"
 }
 
 

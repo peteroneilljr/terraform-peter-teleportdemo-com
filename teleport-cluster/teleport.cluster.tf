@@ -2,7 +2,7 @@
 
 resource "kubernetes_namespace_v1" "teleport_cluster" {
   metadata {
-    name = "${var.resource_prefix}cluster"
+    name = "psh-cluster"
     labels = {
       "pod-security.kubernetes.io/enforce" = "baseline"
     }
@@ -33,7 +33,7 @@ resource "helm_release" "teleport_cluster" {
   version    = var.teleport_version
 
 
-  wait    = true # deployment will take longer than 10 minutes on first run
+  wait    = false
   timeout = 900
 
   values = [<<EOF
@@ -74,8 +74,23 @@ resource "helm_release" "teleport_cluster" {
         issuerKind: ClusterIssuer
         issuerName: letsencrypt-prod              
     # If you are running Kubernetes 1.23 or above, disable PodSecurityPolicies
+    # Mount the ArgoCD SAML SP definition (from kubernetes_config_map.argocd_saml_sp) into
+    # auth pods at /etc/teleport-sp/saml-sp.yaml. This is required because the auth
+    # container is distroless — there's no shell or writable filesystem to stage files.
+    # After the mount is in place, run `tctl create -f /etc/teleport-sp/saml-sp.yaml`
+    # from inside an auth pod to register the SP in Teleport's backend.
+    # See resource.argocd.tf for the full SAML login flow and why tctl is needed.
+    auth:
+      extraVolumes:
+        - name: argocd-saml-sp
+          configMap:
+            name: ${kubernetes_config_map.argocd_saml_sp.metadata[0].name}
+      extraVolumeMounts:
+        - name: argocd-saml-sp
+          mountPath: /etc/teleport-sp
+          readOnly: true
     podSecurityPolicy:
-      enabled: false 
+      enabled: false
     EOF
   ]
 

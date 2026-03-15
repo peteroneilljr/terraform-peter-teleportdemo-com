@@ -1,6 +1,15 @@
+resource "kubernetes_namespace_v1" "apps" {
+  metadata {
+    name = "psh-apps"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "baseline"
+    }
+  }
+}
+
 resource "helm_release" "grafana" {
-  name       = "${var.resource_prefix}grafana"
-  namespace  = kubernetes_namespace_v1.teleport_cluster.metadata.0.name
+  name       = "grafana"
+  namespace  = kubernetes_namespace_v1.apps.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"
   version    = "9.2.6"
@@ -8,6 +17,8 @@ resource "helm_release" "grafana" {
   wait = true
 
   values = [<<EOF
+  rbac:
+    namespaced: true
   grafana.ini:
     auth.jwt:
         enabled: true

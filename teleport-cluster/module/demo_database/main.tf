@@ -8,7 +8,7 @@ terraform {
 
 module "tls" {
   source             = "../db_tls"
-  name               = "${var.resource_prefix}${var.db_type}-tls"
+  name               = coalesce(var.tls_secret_name, "${var.resource_prefix}${var.db_type}-tls")
   namespace          = var.namespace
   ca_common_name     = var.ca_common_name
   dns_names          = var.dns_names

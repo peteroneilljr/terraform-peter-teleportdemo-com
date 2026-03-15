@@ -3,7 +3,7 @@
 resource "kubernetes_deployment_v1" "swagger_ui" {
   metadata {
     name      = "${var.resource_prefix}swagger-ui"
-    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    namespace = kubernetes_namespace_v1.apps.metadata[0].name
     labels    = { app = "swagger-ui" }
   }
 
@@ -43,7 +43,7 @@ resource "kubernetes_deployment_v1" "swagger_ui" {
 resource "kubernetes_service_v1" "swagger_ui" {
   metadata {
     name      = "${var.resource_prefix}swagger-ui"
-    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    namespace = kubernetes_namespace_v1.apps.metadata[0].name
     labels    = { app = "swagger-ui" }
   }
 
