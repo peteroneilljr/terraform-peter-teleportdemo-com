@@ -92,6 +92,11 @@ variable "coder_session_token" {
   type        = string
   sensitive   = true
 }
+variable "anthropic_api_key" {
+  description = "Anthropic API key for Coder AI Tasks"
+  type        = string
+  sensitive   = true
+}
 # ---------------------------------------------------------------------------- #
 # Okta Vars
 # ---------------------------------------------------------------------------- #

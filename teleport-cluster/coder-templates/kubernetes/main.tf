@@ -105,6 +105,24 @@ provider "kubernetes" {
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
+data "coder_parameter" "repo_url" {
+  name         = "repo_url"
+  display_name = "Repository URL"
+  description  = "Git repository to clone into the workspace"
+  default      = ""
+  type         = "string"
+  icon         = "/icon/git.svg"
+  mutable      = true
+}
+
+module "git-clone" {
+  count    = data.coder_parameter.repo_url.value != "" ? 1 : 0
+  source   = "registry.coder.com/modules/git-clone/coder"
+  version  = "1.0.18"
+  agent_id = coder_agent.main.id
+  url      = data.coder_parameter.repo_url.value
+}
+
 resource "coder_agent" "main" {
   os             = "linux"
   arch           = "amd64"
@@ -283,7 +301,25 @@ resource "kubernetes_deployment_v1" "main" {
           name              = "dev"
           image             = "codercom/enterprise-base:ubuntu"
           image_pull_policy = "Always"
-          command           = ["sh", "-c", coder_agent.main.init_script]
+          # Custom init script instead of coder_agent.main.init_script.
+          # Coder stamps CODER_ACCESS_URL (the Teleport app proxy URL) into the
+          # default init script for both binary download and agent connection.
+          # Unauthenticated requests to the proxy return an HTML login page, not
+          # the binary. Neither `provider "coder" { url = "..." }` nor the
+          # server-side CODER_AGENT_URL env var override this behavior.
+          # See: https://github.com/coder/coder/discussions/23048
+          command = ["sh", "-c", <<-EOT
+            set -eux
+            CODER_URL="http://coder.psh-coder.svc.cluster.local"
+
+            curl -fsSL "$CODER_URL/bin/coder-linux-amd64" -o /tmp/coder
+            chmod +x /tmp/coder
+
+            export CODER_AGENT_AUTH="token"
+            export CODER_AGENT_URL="$CODER_URL"
+            exec /tmp/coder agent
+          EOT
+          ]
           security_context {
             run_as_user = "1000"
           }
