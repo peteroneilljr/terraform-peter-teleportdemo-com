@@ -81,13 +81,24 @@ resource "helm_release" "teleport_cluster" {
     # from inside an auth pod to register the SP in Teleport's backend.
     # See resource.argocd.tf for the full SAML login flow and why tctl is needed.
     auth:
+      teleportConfig:
+        access_graph:
+          enabled: true
+          endpoint: teleport-access-graph.teleport-access-graph.svc.cluster.local:443
+          ca: /var/run/access-graph/ca.pem
       extraVolumes:
         - name: argocd-saml-sp
           configMap:
             name: ${kubernetes_config_map.argocd_saml_sp.metadata[0].name}
+        - name: tag-ca
+          configMap:
+            name: ${kubernetes_config_map.tag_ca.metadata[0].name}
       extraVolumeMounts:
         - name: argocd-saml-sp
           mountPath: /etc/teleport-sp
+          readOnly: true
+        - name: tag-ca
+          mountPath: /var/run/access-graph
           readOnly: true
     podSecurityPolicy:
       enabled: false
@@ -98,6 +109,7 @@ resource "helm_release" "teleport_cluster" {
     aws_iam_role_policy_attachment.irsa_attach_dynamodb,
     aws_iam_role_policy_attachment.irsa_attach_s3,
     helm_release.teleport_crds,
+    kubernetes_config_map.tag_ca,
   ]
 }
 # ---------------------------------------------------------------------------- #
