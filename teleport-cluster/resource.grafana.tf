@@ -16,21 +16,38 @@ resource "helm_release" "grafana" {
 
   wait = true
 
+  depends_on = [helm_release.prometheus]
+
   values = [<<EOF
   rbac:
     namespaced: true
   grafana.ini:
+    dashboards:
+        default_home_dashboard_path: /tmp/dashboards/teleport-overview.json
     auth.jwt:
         enabled: true
         header_name: Teleport-Jwt-Assertion
         username_claim: sub
-        email_claim: sub 
+        email_claim: sub
         auto_sign_up: true
         jwk_set_url: https://${local.teleport_cluster_fqdn}/.well-known/jwks.json
         username_attribute_path: username
         role_attribute_path: contains(roles[*], 'access') && 'Admin' || contains(roles[*], 'editor') && 'Editor' || 'Viewer'
         allow_assign_grafana_admin: true
         cache_ttl: 60m
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-server.psh-apps.svc.cluster.local
+          access: proxy
+          isDefault: true
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: psh-apps
   EOF
   ]
 }
