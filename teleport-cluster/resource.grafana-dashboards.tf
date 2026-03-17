@@ -21,251 +21,13 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
       timepicker = {}
       templating = { list = [] }
       panels = concat(
-        # ── Row 1: Cluster Health ──
-        [
-          {
-            id        = 100
-            type      = "row"
-            title     = "Cluster Health"
-            gridPos   = { x = 0, y = 0, w = 24, h = 1 }
-            collapsed = false
-            panels    = []
-          },
-          {
-            id      = 1
-            type    = "stat"
-            title   = "Process State"
-            gridPos = { x = 0, y = 1, w = 6, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "process_state"
-                legendFormat = "{{instance}}"
-                refId        = "A"
-              }
-            ]
-            options = {
-              reduceOptions = { calcs = ["lastNotNull"] }
-              colorMode     = "background"
-              graphMode     = "none"
-              orientation   = "horizontal"
-            }
-            fieldConfig = {
-              defaults = {
-                thresholds = {
-                  mode = "absolute"
-                  steps = [
-                    { color = "green", value = null },
-                    { color = "yellow", value = 1 },
-                    { color = "red", value = 2 }
-                  ]
-                }
-                color = { mode = "thresholds" }
-              }
-              overrides = []
-            }
-          },
-          {
-            id      = 2
-            type    = "stat"
-            title   = "Build Info"
-            gridPos = { x = 6, y = 1, w = 6, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "teleport_build_info"
-                legendFormat = "{{version}}"
-                refId        = "A"
-              }
-            ]
-            options = {
-              reduceOptions = { calcs = ["lastNotNull"], fields = "/^version$/" }
-              colorMode     = "none"
-              graphMode     = "none"
-              textMode      = "name"
-              orientation   = "horizontal"
-            }
-            fieldConfig = {
-              defaults = {
-                color = { mode = "fixed", fixedColor = "text" }
-              }
-              overrides = []
-            }
-          },
-          {
-            id      = 3
-            type    = "stat"
-            title   = "Registered Servers"
-            gridPos = { x = 12, y = 1, w = 6, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "teleport_registered_servers"
-                legendFormat = "{{type}}"
-                refId        = "A"
-              }
-            ]
-            options = {
-              reduceOptions = { calcs = ["lastNotNull"] }
-              colorMode     = "value"
-              graphMode     = "none"
-              orientation   = "horizontal"
-            }
-            fieldConfig = {
-              defaults = {
-                color = { mode = "palette-classic" }
-              }
-              overrides = []
-            }
-          },
-          {
-            id      = 4
-            type    = "stat"
-            title   = "Total Roles"
-            gridPos = { x = 18, y = 1, w = 6, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "teleport_roles_total"
-                legendFormat = ""
-                refId        = "A"
-              }
-            ]
-            options = {
-              reduceOptions = { calcs = ["lastNotNull"] }
-              colorMode     = "value"
-              graphMode     = "none"
-              orientation   = "horizontal"
-            }
-            fieldConfig = {
-              defaults = {
-                unit  = "short"
-                color = { mode = "fixed", fixedColor = "blue" }
-              }
-              overrides = []
-            }
-          },
-        ],
-
-        # ── Row 2: Resources & Connections ──
-        [
-          {
-            id        = 101
-            type      = "row"
-            title     = "Resources & Connections"
-            gridPos   = { x = 0, y = 7, w = 24, h = 1 }
-            collapsed = false
-            panels    = []
-          },
-          {
-            id      = 5
-            type    = "stat"
-            title   = "Connected Resources"
-            gridPos = { x = 0, y = 8, w = 8, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "sum(teleport_connected_resources) by (type)"
-                legendFormat = "{{type}}"
-                refId        = "A"
-              }
-            ]
-            options = {
-              reduceOptions = { calcs = ["lastNotNull"] }
-              colorMode     = "value"
-              graphMode     = "none"
-              orientation   = "horizontal"
-            }
-            fieldConfig = {
-              defaults = {
-                color = { mode = "palette-classic" }
-              }
-              overrides = []
-            }
-          },
-          {
-            id      = 6
-            type    = "stat"
-            title   = "Reverse Tunnels"
-            gridPos = { x = 8, y = 8, w = 8, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "teleport_reverse_tunnels_connected"
-                legendFormat = "{{instance}}"
-                refId        = "A"
-              }
-            ]
-            options = {
-              reduceOptions = { calcs = ["lastNotNull"] }
-              colorMode     = "value"
-              graphMode     = "none"
-              orientation   = "horizontal"
-            }
-            fieldConfig = {
-              defaults = {
-                unit  = "short"
-                color = { mode = "fixed", fixedColor = "purple" }
-              }
-              overrides = []
-            }
-          },
-          {
-            id      = 7
-            type    = "timeseries"
-            title   = "Active Sessions"
-            gridPos = { x = 16, y = 8, w = 8, h = 6 }
-            datasource = {
-              type = "prometheus"
-              uid  = "prometheus"
-            }
-            targets = [
-              {
-                expr         = "server_interactive_sessions_total"
-                legendFormat = "{{instance}}"
-                refId        = "A"
-              }
-            ]
-            options = {
-              tooltip = { mode = "multi" }
-              legend  = { displayMode = "list", placement = "bottom" }
-            }
-            fieldConfig = {
-              defaults = {
-                unit   = "short"
-                color  = { mode = "palette-classic" }
-                custom = { lineWidth = 1, fillOpacity = 10 }
-              }
-              overrides = []
-            }
-          },
-        ],
-
-        # ── Row 3: Backend Performance ──
+        # ── Row 1: Backend Performance ──
         [
           {
             id        = 102
             type      = "row"
             title     = "Backend Performance"
-            gridPos   = { x = 0, y = 14, w = 24, h = 1 }
+            gridPos   = { x = 0, y = 0, w = 24, h = 1 }
             collapsed = false
             panels    = []
           },
@@ -273,7 +35,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 8
             type    = "timeseries"
             title   = "Backend Read/Write Rate"
-            gridPos = { x = 0, y = 15, w = 12, h = 6 }
+            gridPos = { x = 0, y = 1, w = 12, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -307,7 +69,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 9
             type    = "timeseries"
             title   = "Backend Latency (p50/p95/p99)"
-            gridPos = { x = 12, y = 15, w = 12, h = 6 }
+            gridPos = { x = 12, y = 1, w = 12, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -359,13 +121,13 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
           },
         ],
 
-        # ── Row 4: Audit & Security ──
+        # ── Row 2: Audit & Security ──
         [
           {
             id        = 103
             type      = "row"
             title     = "Audit & Security"
-            gridPos   = { x = 0, y = 21, w = 24, h = 1 }
+            gridPos   = { x = 0, y = 7, w = 24, h = 1 }
             collapsed = false
             panels    = []
           },
@@ -373,7 +135,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 10
             type    = "timeseries"
             title   = "Audit Events"
-            gridPos = { x = 0, y = 22, w = 8, h = 6 }
+            gridPos = { x = 0, y = 8, w = 8, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -402,7 +164,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 11
             type    = "timeseries"
             title   = "Failed Logins & Cert Mismatches"
-            gridPos = { x = 8, y = 22, w = 8, h = 6 }
+            gridPos = { x = 8, y = 8, w = 8, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -436,7 +198,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 12
             type    = "timeseries"
             title   = "Certificate Generation Rate"
-            gridPos = { x = 16, y = 22, w = 8, h = 6 }
+            gridPos = { x = 16, y = 8, w = 8, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -463,13 +225,13 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
           },
         ],
 
-        # ── Row 5: gRPC ──
+        # ── Row 3: gRPC ──
         [
           {
             id        = 104
             type      = "row"
             title     = "gRPC"
-            gridPos   = { x = 0, y = 28, w = 24, h = 1 }
+            gridPos   = { x = 0, y = 14, w = 24, h = 1 }
             collapsed = false
             panels    = []
           },
@@ -477,7 +239,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 13
             type    = "timeseries"
             title   = "gRPC Request Rate (Top 10)"
-            gridPos = { x = 0, y = 29, w = 12, h = 6 }
+            gridPos = { x = 0, y = 15, w = 12, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -506,7 +268,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 14
             type    = "timeseries"
             title   = "gRPC Error Rate"
-            gridPos = { x = 12, y = 29, w = 12, h = 6 }
+            gridPos = { x = 12, y = 15, w = 12, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -533,13 +295,13 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
           },
         ],
 
-        # ── Row 6: Go Runtime ──
+        # ── Row 4: Go Runtime ──
         [
           {
             id        = 105
             type      = "row"
             title     = "Go Runtime"
-            gridPos   = { x = 0, y = 35, w = 24, h = 1 }
+            gridPos   = { x = 0, y = 21, w = 24, h = 1 }
             collapsed = false
             panels    = []
           },
@@ -547,7 +309,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 15
             type    = "timeseries"
             title   = "Goroutines"
-            gridPos = { x = 0, y = 36, w = 8, h = 6 }
+            gridPos = { x = 0, y = 22, w = 8, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -576,7 +338,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 16
             type    = "timeseries"
             title   = "Memory Usage"
-            gridPos = { x = 8, y = 36, w = 8, h = 6 }
+            gridPos = { x = 8, y = 22, w = 8, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -605,7 +367,7 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             id      = 17
             type    = "timeseries"
             title   = "CPU Usage"
-            gridPos = { x = 16, y = 36, w = 8, h = 6 }
+            gridPos = { x = 16, y = 22, w = 8, h = 6 }
             datasource = {
               type = "prometheus"
               uid  = "prometheus"
@@ -624,6 +386,244 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
             fieldConfig = {
               defaults = {
                 unit   = "percentunit"
+                color  = { mode = "palette-classic" }
+                custom = { lineWidth = 1, fillOpacity = 10 }
+              }
+              overrides = []
+            }
+          },
+        ],
+
+        # ── Row 5: Cluster Health ──
+        [
+          {
+            id        = 100
+            type      = "row"
+            title     = "Cluster Health"
+            gridPos   = { x = 0, y = 28, w = 24, h = 1 }
+            collapsed = false
+            panels    = []
+          },
+          {
+            id      = 1
+            type    = "stat"
+            title   = "Process State"
+            gridPos = { x = 0, y = 29, w = 6, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "process_state"
+                legendFormat = "{{instance}}"
+                refId        = "A"
+              }
+            ]
+            options = {
+              reduceOptions = { calcs = ["lastNotNull"] }
+              colorMode     = "background"
+              graphMode     = "none"
+              orientation   = "horizontal"
+            }
+            fieldConfig = {
+              defaults = {
+                thresholds = {
+                  mode = "absolute"
+                  steps = [
+                    { color = "green", value = null },
+                    { color = "yellow", value = 1 },
+                    { color = "red", value = 2 }
+                  ]
+                }
+                color = { mode = "thresholds" }
+              }
+              overrides = []
+            }
+          },
+          {
+            id      = 2
+            type    = "stat"
+            title   = "Build Info"
+            gridPos = { x = 6, y = 29, w = 6, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "teleport_build_info"
+                legendFormat = "{{version}}"
+                refId        = "A"
+              }
+            ]
+            options = {
+              reduceOptions = { calcs = ["lastNotNull"], fields = "/^version$/" }
+              colorMode     = "none"
+              graphMode     = "none"
+              textMode      = "name"
+              orientation   = "horizontal"
+            }
+            fieldConfig = {
+              defaults = {
+                color = { mode = "fixed", fixedColor = "text" }
+              }
+              overrides = []
+            }
+          },
+          {
+            id      = 3
+            type    = "stat"
+            title   = "Registered Servers"
+            gridPos = { x = 12, y = 29, w = 6, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "teleport_registered_servers"
+                legendFormat = "{{type}}"
+                refId        = "A"
+              }
+            ]
+            options = {
+              reduceOptions = { calcs = ["lastNotNull"] }
+              colorMode     = "value"
+              graphMode     = "none"
+              orientation   = "horizontal"
+            }
+            fieldConfig = {
+              defaults = {
+                color = { mode = "palette-classic" }
+              }
+              overrides = []
+            }
+          },
+          {
+            id      = 4
+            type    = "stat"
+            title   = "Total Roles"
+            gridPos = { x = 18, y = 29, w = 6, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "teleport_roles_total"
+                legendFormat = ""
+                refId        = "A"
+              }
+            ]
+            options = {
+              reduceOptions = { calcs = ["lastNotNull"] }
+              colorMode     = "value"
+              graphMode     = "none"
+              orientation   = "horizontal"
+            }
+            fieldConfig = {
+              defaults = {
+                unit  = "short"
+                color = { mode = "fixed", fixedColor = "blue" }
+              }
+              overrides = []
+            }
+          },
+        ],
+
+        # ── Row 6: Resources & Connections ──
+        [
+          {
+            id        = 101
+            type      = "row"
+            title     = "Resources & Connections"
+            gridPos   = { x = 0, y = 35, w = 24, h = 1 }
+            collapsed = false
+            panels    = []
+          },
+          {
+            id      = 5
+            type    = "stat"
+            title   = "Connected Resources"
+            gridPos = { x = 0, y = 36, w = 8, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "sum(teleport_connected_resources) by (type)"
+                legendFormat = "{{type}}"
+                refId        = "A"
+              }
+            ]
+            options = {
+              reduceOptions = { calcs = ["lastNotNull"] }
+              colorMode     = "value"
+              graphMode     = "none"
+              orientation   = "horizontal"
+            }
+            fieldConfig = {
+              defaults = {
+                color = { mode = "palette-classic" }
+              }
+              overrides = []
+            }
+          },
+          {
+            id      = 6
+            type    = "stat"
+            title   = "Reverse Tunnels"
+            gridPos = { x = 8, y = 36, w = 8, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "teleport_reverse_tunnels_connected"
+                legendFormat = "{{instance}}"
+                refId        = "A"
+              }
+            ]
+            options = {
+              reduceOptions = { calcs = ["lastNotNull"] }
+              colorMode     = "value"
+              graphMode     = "none"
+              orientation   = "horizontal"
+            }
+            fieldConfig = {
+              defaults = {
+                unit  = "short"
+                color = { mode = "fixed", fixedColor = "purple" }
+              }
+              overrides = []
+            }
+          },
+          {
+            id      = 7
+            type    = "timeseries"
+            title   = "Active Sessions"
+            gridPos = { x = 16, y = 36, w = 8, h = 6 }
+            datasource = {
+              type = "prometheus"
+              uid  = "prometheus"
+            }
+            targets = [
+              {
+                expr         = "server_interactive_sessions_total"
+                legendFormat = "{{instance}}"
+                refId        = "A"
+              }
+            ]
+            options = {
+              tooltip = { mode = "multi" }
+              legend  = { displayMode = "list", placement = "bottom" }
+            }
+            fieldConfig = {
+              defaults = {
+                unit   = "short"
                 color  = { mode = "palette-classic" }
                 custom = { lineWidth = 1, fillOpacity = 10 }
               }
