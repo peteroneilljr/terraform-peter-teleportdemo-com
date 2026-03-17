@@ -13,3 +13,7 @@ output "teleport_db_events_name" {
 output "teleport_s3_sessions_name" {
   value = aws_s3_bucket.teleport_sessions.bucket
 }
+output "bedrock_inference_profile_arn" {
+  value       = "arn:aws:bedrock:us-west-2:${data.aws_caller_identity.current.account_id}:inference-profile/us.anthropic.claude-sonnet-4-6"
+  description = "ARN of the Bedrock cross-region inference profile for Teleport session summaries"
+}

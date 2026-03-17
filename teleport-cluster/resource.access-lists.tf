@@ -107,6 +107,12 @@ resource "kubectl_manifest" "access_list_infra_operators" {
           "${var.resource_prefix}aws-console",
         ]
       }
+      owner_grants = {
+        roles = [
+          "${var.resource_prefix}k8s",
+          "${var.resource_prefix}aws-console",
+        ]
+      }
       audit = {
         recurrence = {
           frequency    = "1"
