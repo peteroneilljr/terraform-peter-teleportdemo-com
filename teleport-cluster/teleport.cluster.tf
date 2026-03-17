@@ -84,7 +84,7 @@ resource "helm_release" "teleport_cluster" {
       teleportConfig:
         access_graph:
           enabled: true
-          endpoint: teleport-access-graph.teleport-access-graph.svc.cluster.local:443
+          endpoint: teleport-access-graph.psh-teleport-access-graph.svc.cluster.local:443
           ca: /var/run/access-graph/ca.pem
       extraVolumes:
         - name: argocd-saml-sp

@@ -13,7 +13,7 @@
 
 resource "kubernetes_namespace_v1" "access_graph" {
   metadata {
-    name = "teleport-access-graph"
+    name = "psh-teleport-access-graph"
   }
 }
 
@@ -77,7 +77,7 @@ resource "tls_cert_request" "tag_server" {
   }
 
   dns_names = [
-    "teleport-access-graph.teleport-access-graph.svc.cluster.local",
+    "teleport-access-graph.psh-teleport-access-graph.svc.cluster.local",
   ]
 }
 
@@ -96,7 +96,7 @@ resource "tls_locally_signed_cert" "tag_server" {
 }
 
 # ---------------------------------------------------------------------------- #
-# Kubernetes Secrets (in teleport-access-graph namespace)
+# Kubernetes Secrets (in psh-teleport-access-graph namespace)
 # ---------------------------------------------------------------------------- #
 
 resource "kubernetes_secret" "tag_tls" {
