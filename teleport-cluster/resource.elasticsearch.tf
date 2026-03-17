@@ -107,6 +107,8 @@ resource "kubernetes_config_map" "kibana_config" {
           credentials:
             username: "anonymous_user"
             password: "anonymous_pass"
+      uiSettings.overrides:
+        defaultRoute: "/app/dashboards#/view/teleport-audit-dashboard"
     YAML
   }
 }
