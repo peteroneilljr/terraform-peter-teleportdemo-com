@@ -87,6 +87,48 @@ resource "kubectl_manifest" "teleport_app_coder" {
   })
 }
 
+resource "kubectl_manifest" "teleport_app_elasticsearch" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportAppV3"
+    metadata = {
+      name      = "elasticsearch"
+      namespace = helm_release.teleport_cluster.namespace
+      labels    = { env = "dev", host = "k8s", app = "elasticsearch" }
+    }
+    spec = {
+      uri                  = "https://${helm_release.elasticsearch.name}-master.${helm_release.elasticsearch.namespace}.svc.cluster.local:9200"
+      public_addr          = "elasticsearch.${local.teleport_cluster_fqdn}"
+      insecure_skip_verify = true # auto-generated internal TLS certs
+      # Inject basic auth so users skip the ES login prompt (Teleport handles real auth)
+      rewrite = {
+        headers = [
+          {
+            name  = "Authorization"
+            value = "Basic ${base64encode("elastic:${random_password.elasticsearch.result}")}"
+          }
+        ]
+      }
+    }
+  })
+}
+
+resource "kubectl_manifest" "teleport_app_kibana" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportAppV3"
+    metadata = {
+      name      = "kibana"
+      namespace = helm_release.teleport_cluster.namespace
+      labels    = { env = "dev", host = "k8s", app = "kibana" }
+    }
+    spec = {
+      uri         = "http://${kubernetes_service_v1.kibana.metadata[0].name}.${kubernetes_service_v1.kibana.metadata[0].namespace}.svc.cluster.local:5601"
+      public_addr = "kibana.${local.teleport_cluster_fqdn}"
+    }
+  })
+}
+
 resource "kubectl_manifest" "teleport_app_swagger_ui" {
   yaml_body = yamlencode({
     apiVersion = "resources.teleport.dev/v1"

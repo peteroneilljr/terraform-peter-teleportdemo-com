@@ -180,6 +180,32 @@ resource "kubectl_manifest" "teleport_role_aws_console_ro" {
 }
 
 # ---------------------------------------------------------------------------- #
+# Elasticsearch Read-Only Role (Kibana browse-only, no raw API)
+# ---------------------------------------------------------------------------- #
+resource "kubectl_manifest" "teleport_role_elasticsearch_ro" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportRoleV7"
+    metadata = {
+      annotations = {
+        "teleport.dev/keep" = "true"
+      }
+      finalizers = ["resources.teleport.dev/deletion"]
+      generation = 1
+      name       = "${var.resource_prefix}elasticsearch-ro"
+      namespace  = helm_release.teleport_cluster.namespace
+    }
+    spec = {
+      allow = {
+        app_labels = {
+          app = "kibana"
+        }
+      }
+    }
+  })
+}
+
+# ---------------------------------------------------------------------------- #
 # SSH Node Read-Only Role
 # ---------------------------------------------------------------------------- #
 resource "kubectl_manifest" "teleport_role_nodes_ro" {

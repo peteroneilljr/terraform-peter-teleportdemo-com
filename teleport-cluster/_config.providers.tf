@@ -94,3 +94,8 @@ resource "random_password" "coder_db" {
   length  = 16
   special = false
 }
+
+resource "random_password" "elasticsearch" {
+  length  = 16
+  special = false
+}

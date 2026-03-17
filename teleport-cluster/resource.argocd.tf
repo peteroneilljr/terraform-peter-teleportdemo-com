@@ -65,7 +65,7 @@ resource "helm_release" "argocd" {
         "admin.enabled"                 = "false"
         "oidc.tls.insecure.skip.verify" = "true"
         # Dex SAML connector — Dex acts as the SAML SP, Teleport is the IDP.
-        "dex.config"                    = <<-DEXCONFIG
+        "dex.config" = <<-DEXCONFIG
           connectors:
           - type: saml
             id: teleport
@@ -97,8 +97,8 @@ resource "helm_release" "argocd" {
         "policy.default" = "role:readonly"
         # Maps Teleport's "access" role (sent as a group attribute) to ArgoCD's admin role.
         # Any Teleport user with the "access" role gets full ArgoCD admin access.
-        "policy.csv"     = "g, access, role:admin"
-        "scopes"         = "[groups]"
+        "policy.csv" = "g, access, role:admin"
+        "scopes"     = "[groups]"
       }
     }
   })]
