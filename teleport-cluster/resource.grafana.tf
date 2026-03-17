@@ -40,6 +40,7 @@ resource "helm_release" "grafana" {
       apiVersion: 1
       datasources:
         - name: Prometheus
+          uid: prometheus
           type: prometheus
           url: http://prometheus-server.psh-apps.svc.cluster.local
           access: proxy
