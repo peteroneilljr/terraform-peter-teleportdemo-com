@@ -78,7 +78,6 @@ teleport-cluster/               # All Terraform configuration
   module/
     demo_database/              # Reusable module for Bitnami DB charts + TLS
     db_tls/                     # TLS cert generation for database mTLS
-docker/                         # Legacy Dockerfiles (not referenced by Terraform)
 docs/                           # Setup guides
   coder-oidc-setup.md           # Coder OIDC configuration guide
 ```
