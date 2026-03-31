@@ -471,7 +471,7 @@ resource "kubernetes_deployment_v1" "logstash" {
 
           resources {
             requests = {
-              cpu    = "250m"
+              cpu    = "50m"
               memory = "512Mi"
             }
             limits = {

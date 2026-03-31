@@ -31,7 +31,7 @@ resource "kubernetes_deployment_v1" "swagger_ui" {
           resources {
             requests = {
               memory = "64Mi"
-              cpu    = "100m"
+              cpu    = "10m"
             }
           }
         }

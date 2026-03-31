@@ -49,6 +49,10 @@ module "mysql" {
       repository: bitnamilegacy/mysql
       tag: 9.4.0-debian-12-r1
     primary:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
       extraVolumes:
         - name: custom-init
           configMap:

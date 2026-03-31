@@ -37,7 +37,7 @@ resource "helm_release" "elasticsearch" {
     # Minimal resources for demo
     resources = {
       requests = {
-        cpu    = "500m"
+        cpu    = "150m"
         memory = "1Gi"
       }
       limits = {
@@ -147,7 +147,7 @@ resource "kubernetes_deployment_v1" "kibana" {
 
           resources {
             requests = {
-              cpu    = "250m"
+              cpu    = "50m"
               memory = "512Mi"
             }
             limits = {

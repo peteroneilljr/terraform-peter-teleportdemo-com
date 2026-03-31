@@ -80,6 +80,10 @@ module "postgres" {
       database: teleport_db
 
     primary:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi
       extraVolumes:
         - name: custom-init
           configMap:

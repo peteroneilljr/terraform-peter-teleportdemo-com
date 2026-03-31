@@ -277,7 +277,7 @@ resource "kubernetes_deployment_v1" "teleport_mcp" {
 
           resources {
             requests = {
-              cpu    = "100m"
+              cpu    = "25m"
               memory = "256Mi"
             }
             limits = {

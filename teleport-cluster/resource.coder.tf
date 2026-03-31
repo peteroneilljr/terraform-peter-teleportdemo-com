@@ -23,7 +23,7 @@ resource "helm_release" "coder" {
   values = [yamlencode({
     coder = {
       resources = {
-        requests = { cpu = "1000m", memory = "2Gi" }
+        requests = { cpu = "250m", memory = "2Gi" }
       }
       service = { type = "ClusterIP" }
       env = [

@@ -48,6 +48,10 @@ module "mariadb" {
 
   chart_values = <<-EOF
     primary:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
       extraVolumes:
         - name: custom-init
           configMap:
