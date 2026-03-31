@@ -5,7 +5,7 @@ resource "kubectl_manifest" "teleport_app_grafana" {
     metadata = {
       name      = "grafana"
       namespace = helm_release.teleport_cluster.namespace
-      labels    = { env = "dev", host = "k8s" }
+      labels    = { env = "dev", host = "k8s", app = "grafana" }
     }
     spec = {
       uri         = "http://${helm_release.grafana.name}.${helm_release.grafana.namespace}.svc.cluster.local"

@@ -52,3 +52,21 @@ resource "helm_release" "grafana" {
   EOF
   ]
 }
+
+resource "kubectl_manifest" "teleport_role_grafana" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportRoleV7"
+    metadata = {
+      name      = "${var.resource_prefix}grafana"
+      namespace = helm_release.teleport_cluster.namespace
+    }
+    spec = {
+      allow = {
+        app_labels = {
+          app = "grafana"
+        }
+      }
+    }
+  })
+}

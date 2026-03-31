@@ -51,6 +51,7 @@ resource "kubectl_manifest" "sso_github" {
               "${var.resource_prefix}aws-console-ro",
               "${var.resource_prefix}aws-bedrock-ro",
               # Apps
+              "${var.resource_prefix}grafana",
               "${var.resource_prefix}swagger-ui",
               "${var.resource_prefix}coder",
               # SSH (one node, visitor user)
