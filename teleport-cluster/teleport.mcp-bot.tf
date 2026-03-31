@@ -55,6 +55,12 @@ resource "kubectl_manifest" "teleport_role_mcp_admin" {
     }
     spec = {
       allow = {
+        # Label-based access — required for tctl nodes/apps/db/kube ls commands
+        node_labels       = { "*" = "*" }
+        app_labels        = { "*" = "*" }
+        db_labels         = { "*" = "*" }
+        kubernetes_labels = { "*" = "*" }
+        # API-level RBAC
         rules = [
           {
             resources = [
