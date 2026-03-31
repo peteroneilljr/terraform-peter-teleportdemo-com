@@ -73,6 +73,9 @@ resource "helm_release" "elasticsearch" {
     esConfig = {
       "elasticsearch.yml" = "xpack.security.enabled: true"
     }
+    # Single-node cluster can never reach "green" (no replica target), so
+    # accept "yellow" in the readiness probe to avoid permanent not-ready state.
+    clusterHealthCheckParams = "wait_for_status=yellow&timeout=1s"
     # Disable tests
     tests = {
       enabled = false
