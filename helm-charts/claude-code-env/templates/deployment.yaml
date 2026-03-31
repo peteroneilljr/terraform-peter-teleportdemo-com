@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "claude-code-env.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "claude-code-env.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "claude-code-env.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "claude-code-env.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "claude-code-env.fullname" . }}-tbot
+      {{- if .Values.git.repository }}
+      initContainers:
+        - name: git-clone
+          image: alpine/git:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              {{- if .Values.git.sshKeySecret.name }}
+              mkdir -p /root/.ssh
+              cp /etc/git-secret/{{ .Values.git.sshKeySecret.key }} /root/.ssh/id_rsa
+              chmod 600 /root/.ssh/id_rsa
+              ssh-keyscan -H $(echo {{ .Values.git.repository }} | sed 's|.*@\([^:]*\):.*|\1|') >> /root/.ssh/known_hosts 2>/dev/null || true
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no"
+              {{- end }}
+              git clone --branch {{ .Values.git.branch }} {{ .Values.git.repository }} /workspace
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            {{- if .Values.git.sshKeySecret.name }}
+            - name: ssh-key
+              mountPath: /etc/git-secret
+              readOnly: true
+            {{- end }}
+      {{- end }}
+      containers:
+        - name: tbot
+          image: public.ecr.aws/gravitational/teleport-distroless:{{ .Values.teleport.version }}
+          command:
+            - /usr/bin/dumb-init
+            - tbot
+            - start
+            - -c
+            - /etc/tbot/tbot.yaml
+          volumeMounts:
+            - name: tbot-config
+              mountPath: /etc/tbot
+              readOnly: true
+            - name: machine-id
+              mountPath: /opt/machine-id
+          resources:
+            {{- toYaml .Values.resources.tbot | nindent 12 }}
+
+        - name: teleport-agent
+          image: public.ecr.aws/gravitational/teleport:{{ .Values.teleport.version }}
+          command:
+            - /usr/bin/dumb-init
+            - teleport
+            - start
+            - --config=/etc/teleport/teleport.yaml
+          volumeMounts:
+            - name: agent-config
+              mountPath: /etc/teleport
+              readOnly: true
+            - name: machine-id
+              mountPath: /opt/machine-id
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources.agent | nindent 12 }}
+
+        - name: claude-code
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while [ ! -f /opt/machine-id/identity ]; do
+                echo 'Waiting for tbot identity...'
+                sleep 2
+              done
+              echo 'Identity ready.'
+              exec sleep infinity
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.anthropicApiKey.secretName }}
+                  key: {{ .Values.anthropicApiKey.secretKey }}
+            {{- if .Values.claude.model }}
+            - name: CLAUDE_CODE_MODEL
+              value: {{ .Values.claude.model | quote }}
+            {{- end }}
+            {{- range $name, $server := .Values.mcpServers }}
+            {{- if $server.env }}
+            {{- range $envName, $envVal := $server.env }}
+            {{- if $envVal.secretKeyRef }}
+            - name: {{ $envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $envVal.secretKeyRef.name }}
+                  key: {{ $envVal.secretKeyRef.key }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          volumeMounts:
+            - name: machine-id
+              mountPath: /opt/machine-id
+              readOnly: true
+            - name: workspace
+              mountPath: /workspace
+            - name: claude-config
+              mountPath: /home/claude/.claude/settings.json
+              subPath: settings.json
+          resources:
+            {{- toYaml .Values.resources.claude | nindent 12 }}
+
+      volumes:
+        - name: machine-id
+          emptyDir: {}
+        - name: workspace
+          emptyDir: {}
+        - name: tbot-config
+          configMap:
+            name: {{ include "claude-code-env.fullname" . }}-tbot
+        - name: agent-config
+          configMap:
+            name: {{ include "claude-code-env.fullname" . }}-agent
+        - name: claude-config
+          configMap:
+            name: {{ include "claude-code-env.fullname" . }}-claude
+        {{- if .Values.git.sshKeySecret.name }}
+        - name: ssh-key
+          secret:
+            secretName: {{ .Values.git.sshKeySecret.name }}
+            defaultMode: 0400
+        {{- end }}

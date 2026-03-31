@@ -57,8 +57,6 @@ resource "kubectl_manifest" "sso_github" {
               "${var.resource_prefix}nodes-ro",
               # Session observation
               "${var.resource_prefix}session-observe",
-              # Access requests (can request admin roles, approved by Okta admins)
-              "${var.resource_prefix}requester",
             ]
           }
         ]

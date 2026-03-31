@@ -1,0 +1,19 @@
+{{- $mcpServers := dict }}
+{{- range $name, $server := .Values.mcpServers }}
+  {{- $entry := dict "command" $server.command "args" $server.args }}
+  {{- $_ := set $mcpServers $name $entry }}
+{{- end }}
+{{- $settings := dict "mcpServers" $mcpServers }}
+{{- if .Values.claude.extraSettings }}
+  {{- $settings = merge $settings .Values.claude.extraSettings }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "claude-code-env.fullname" . }}-claude
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "claude-code-env.labels" . | nindent 4 }}
+data:
+  settings.json: |
+    {{ $settings | toJson }}

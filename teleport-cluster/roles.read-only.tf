@@ -26,6 +26,10 @@ resource "kubectl_manifest" "teleport_role_postgresql_ro" {
         }
         db_names = ["teleport_db", "*"]
         db_roles = ["read_only"]
+        request = {
+          roles           = ["${var.resource_prefix}postgresql"]
+          search_as_roles = ["${var.resource_prefix}postgresql"]
+        }
       }
     }
   })
@@ -54,6 +58,10 @@ resource "kubectl_manifest" "teleport_role_mysql_ro" {
         }
         db_names = ["teleport_db", "*"]
         db_roles = ["read_only"]
+        request = {
+          roles           = ["${var.resource_prefix}mysql"]
+          search_as_roles = ["${var.resource_prefix}mysql"]
+        }
       }
     }
   })
@@ -82,6 +90,10 @@ resource "kubectl_manifest" "teleport_role_mariadb_ro" {
         }
         db_names = ["teleport_db", "*"]
         db_roles = ["read_only"]
+        request = {
+          roles           = ["${var.resource_prefix}mariadb"]
+          search_as_roles = ["${var.resource_prefix}mariadb"]
+        }
       }
     }
   })
@@ -110,6 +122,10 @@ resource "kubectl_manifest" "teleport_role_mongodb_ro" {
         }
         db_users = ["teleport-readonly"]
         db_names = ["admin", "*"]
+        request = {
+          roles           = ["${var.resource_prefix}mongodb"]
+          search_as_roles = ["${var.resource_prefix}mongodb"]
+        }
       }
     }
   })
@@ -145,6 +161,10 @@ resource "kubectl_manifest" "teleport_role_k8s_ro" {
             verbs     = ["get", "list", "watch"]
           }
         ]
+        request = {
+          roles           = ["${var.resource_prefix}k8s"]
+          search_as_roles = ["${var.resource_prefix}k8s"]
+        }
       }
     }
   })
@@ -174,6 +194,10 @@ resource "kubectl_manifest" "teleport_role_aws_console_ro" {
         aws_role_arns = [
           aws_iam_role.irsa_aws_console_ro.arn,
         ]
+        request = {
+          roles           = ["${var.resource_prefix}aws-console"]
+          search_as_roles = ["${var.resource_prefix}aws-console"]
+        }
       }
     }
   })
@@ -199,6 +223,10 @@ resource "kubectl_manifest" "teleport_role_elasticsearch_ro" {
       allow = {
         app_labels = {
           app = "kibana"
+        }
+        request = {
+          roles           = ["${var.resource_prefix}elasticsearch"]
+          search_as_roles = ["${var.resource_prefix}elasticsearch"]
         }
       }
     }
@@ -233,6 +261,10 @@ resource "kubectl_manifest" "teleport_role_nodes_ro" {
           hostname = "ubuntu2404"
         }
         host_groups = []
+        request = {
+          roles           = ["${var.resource_prefix}restricted-access"]
+          search_as_roles = ["${var.resource_prefix}restricted-access"]
+        }
       }
     }
   })

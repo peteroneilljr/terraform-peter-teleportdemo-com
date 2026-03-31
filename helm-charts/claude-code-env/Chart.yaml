@@ -1,0 +1,4 @@
+apiVersion: v2
+name: claude-code-env
+description: Isolated Claude Code environment with Teleport access
+version: 0.1.0

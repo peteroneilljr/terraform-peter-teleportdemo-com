@@ -1,5 +1,30 @@
+# Reviewer role — overrides the preset to allow approving any role
+resource "kubectl_manifest" "teleport_role_reviewer" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportRoleV7"
+    metadata = {
+      annotations = {
+        "teleport.dev/keep" = "true"
+      }
+      finalizers = ["resources.teleport.dev/deletion"]
+      generation = 1
+      name       = "reviewer"
+      namespace  = helm_release.teleport_cluster.namespace
+    }
+    spec = {
+      allow = {
+        review_requests = {
+          roles           = ["*"]
+          preview_as_roles = ["*"]
+        }
+      }
+    }
+  })
+}
+
 # Access Request workflow for restricted nodes (tetris, pacman)
-# restricted-user can request access; Okta admins (with "reviewer" role) can approve
+# Okta admins (with "reviewer" role) can approve
 
 # Role granted upon approval — allows SSH to nodes with access=restricted
 resource "kubectl_manifest" "teleport_role_restricted_access" {
@@ -20,31 +45,6 @@ resource "kubectl_manifest" "teleport_role_restricted_access" {
         logins = ["root"]
         node_labels = {
           access = "restricted"
-        }
-      }
-    }
-  })
-}
-
-# Role assigned to restricted-user — allows discovering and requesting access
-resource "kubectl_manifest" "teleport_role_restricted_requester" {
-  yaml_body = yamlencode({
-    apiVersion = "resources.teleport.dev/v1"
-    kind       = "TeleportRoleV7"
-    metadata = {
-      annotations = {
-        "teleport.dev/keep" = "true"
-      }
-      finalizers = ["resources.teleport.dev/deletion"]
-      generation = 1
-      name       = "${var.resource_prefix}restricted-requester"
-      namespace  = helm_release.teleport_cluster.namespace
-    }
-    spec = {
-      allow = {
-        request = {
-          roles           = ["${var.resource_prefix}restricted-access"]
-          search_as_roles = ["${var.resource_prefix}restricted-access"]
         }
       }
     }
@@ -101,26 +101,6 @@ resource "kubectl_manifest" "teleport_role_session_moderate" {
           modes = ["observer", "peer", "moderator"]
         }]
       }
-    }
-  })
-}
-
-# Local user who can only request access to restricted nodes
-resource "kubectl_manifest" "teleport_user_restricted" {
-  yaml_body = yamlencode({
-    apiVersion = "resources.teleport.dev/v2"
-    kind       = "TeleportUser"
-    metadata = {
-      annotations = {
-        "teleport.dev/keep" = "true"
-      }
-      finalizers = ["resources.teleport.dev/deletion"]
-      generation = 1
-      name       = "restricted-user"
-      namespace  = helm_release.teleport_cluster.namespace
-    }
-    spec = {
-      roles = ["${var.resource_prefix}restricted-requester"]
     }
   })
 }

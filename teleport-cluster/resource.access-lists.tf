@@ -154,7 +154,7 @@ resource "kubectl_manifest" "access_list_restricted_node_access" {
         roles = ["editor"]
       }
       membership_requires = {
-        roles = ["${var.resource_prefix}restricted-requester"]
+        roles = ["${var.resource_prefix}nodes-ro"]
       }
       grants = {
         roles = [
