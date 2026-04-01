@@ -51,20 +51,21 @@ resource "kubectl_manifest" "teleport_app_awsconsole" {
   })
 }
 
-resource "kubectl_manifest" "teleport_app_awsconsole_bedrock" {
+resource "kubectl_manifest" "teleport_app_awsadmin" {
   yaml_body = yamlencode({
     apiVersion = "resources.teleport.dev/v1"
     kind       = "TeleportAppV3"
     metadata = {
-      name      = "awsconsole-bedrock"
+      name      = "awsadmin"
       namespace = helm_release.teleport_cluster.namespace
-      labels    = { app = "bedrock" }
+      labels    = { env = "dev", host = "k8s", permissions = "admin" }
     }
     spec = {
-      uri = "https://console.aws.amazon.com/bedrock"
+      uri = "https://console.aws.amazon.com/"
     }
   })
 }
+
 
 resource "kubectl_manifest" "teleport_app_coder" {
   yaml_body = yamlencode({

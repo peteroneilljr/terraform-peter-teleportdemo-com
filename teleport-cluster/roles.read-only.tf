@@ -195,8 +195,8 @@ resource "kubectl_manifest" "teleport_role_aws_console_ro" {
           aws_iam_role.irsa_aws_console_ro.arn,
         ]
         request = {
-          roles           = ["${var.resource_prefix}aws-console"]
-          search_as_roles = ["${var.resource_prefix}aws-console"]
+          roles           = ["${var.resource_prefix}aws-console", "${var.resource_prefix}aws-admin"]
+          search_as_roles = ["${var.resource_prefix}aws-console", "${var.resource_prefix}aws-admin"]
         }
       }
     }

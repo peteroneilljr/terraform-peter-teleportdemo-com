@@ -190,6 +190,31 @@ resource "kubectl_manifest" "teleport_role_aws_console" {
         }
         aws_role_arns = [
           aws_iam_role.irsa_aws_console_ro.arn,
+        ]
+      }
+    }
+  })
+}
+
+resource "kubectl_manifest" "teleport_role_aws_admin" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportRoleV7"
+    metadata = {
+      annotations = {
+        "teleport.dev/keep" = "true"
+      }
+      finalizers = ["resources.teleport.dev/deletion"]
+      generation = 1
+      name       = "${var.resource_prefix}aws-admin"
+      namespace  = helm_release.teleport_cluster.namespace
+    }
+    spec = {
+      allow = {
+        app_labels = {
+          permissions = "admin"
+        }
+        aws_role_arns = [
           aws_iam_role.irsa_aws_console_admin.arn,
         ]
       }
