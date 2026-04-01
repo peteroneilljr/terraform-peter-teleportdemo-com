@@ -19,7 +19,7 @@ resource "kubernetes_config_map" "postgres_custom_init" {
     "setup.sh" = <<-EOF
 #!/bin/bash
 set -e
-PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d teleport_db -v ON_ERROR_STOP=1 <<SQL
+PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d teleport_db -v ON_ERROR_STOP=1 <<SQL
 CREATE USER "teleport-admin" LOGIN SUPERUSER;
 CREATE ROLE "admin" NOLOGIN;
 GRANT "admin" TO "teleport-admin" WITH ADMIN OPTION;
@@ -41,8 +41,9 @@ ${local.seed_movies_postgres_sql}
 SQL
 
 # Create Coder database and user
-PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -v ON_ERROR_STOP=1 <<SQL
-SELECT 'CREATE DATABASE coder' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'coder')\gexec
+PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d teleport_db -c "SELECT 1 FROM pg_database WHERE datname = 'coder'" | grep -q 1 || \
+  PGPASSWORD="$POSTGRES_PASSWORD" createdb -U "$POSTGRES_USER" coder
+PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d teleport_db -v ON_ERROR_STOP=1 <<SQL
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'coder') THEN
@@ -54,7 +55,7 @@ GRANT ALL PRIVILEGES ON DATABASE coder TO coder;
 SQL
 
 # Grant coder user ownership of public schema in coder database
-PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d coder -v ON_ERROR_STOP=1 <<SQL
+PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d coder -v ON_ERROR_STOP=1 <<SQL
 ALTER SCHEMA public OWNER TO coder;
 SQL
     EOF
@@ -157,14 +158,14 @@ resource "kubernetes_stateful_set" "postgres" {
           }
           readiness_probe {
             exec {
-              command = ["pg_isready", "-U", "postgres"]
+              command = ["pg_isready", "-U", "developer"]
             }
             initial_delay_seconds = 15
             period_seconds        = 10
           }
           liveness_probe {
             exec {
-              command = ["pg_isready", "-U", "postgres"]
+              command = ["pg_isready", "-U", "developer"]
             }
             initial_delay_seconds = 30
             period_seconds        = 10
