@@ -1,111 +1,238 @@
-module "mysql" {
-  source = "./module/demo_database"
-
-  db_type                    = "mysql"
-  resource_prefix            = var.resource_prefix
-  namespace                  = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
-  teleport_cluster_namespace = helm_release.teleport_cluster.namespace
-  ca_common_name             = "Custom MySQL CA"
+module "mysql_tls" {
+  source             = "./module/db_tls"
+  name               = "${var.resource_prefix}mysql-tls"
+  namespace          = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+  ca_common_name     = "Custom MySQL CA"
   dns_names = [
     "${var.resource_prefix}mysql.${kubernetes_namespace_v1.teleport_cluster.metadata[0].name}",
     "${var.resource_prefix}mysql.${kubernetes_namespace_v1.teleport_cluster.metadata[0].name}.svc.cluster.local",
   ]
   teleport_db_ca_pem = data.http.teleport_db_ca.response_body
+}
 
-  init_sql = <<-EOF
-    #!/bin/bash
-    mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<SQL
-    -- Teleport admin user for auto user provisioning
-    CREATE USER IF NOT EXISTS 'teleport-admin'@'%' REQUIRE SUBJECT '/CN=teleport-admin';
-    GRANT SELECT ON mysql.role_edges TO 'teleport-admin'@'%';
-    GRANT PROCESS, ROLE_ADMIN, CREATE USER ON *.* TO 'teleport-admin'@'%';
-    CREATE DATABASE IF NOT EXISTS \`teleport\`;
-    GRANT ALTER ROUTINE, CREATE ROUTINE, EXECUTE ON \`teleport\`.* TO 'teleport-admin'@'%';
+resource "kubernetes_config_map" "mysql_custom_init" {
+  metadata {
+    name      = "${var.resource_prefix}mysql-custom-init"
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+  }
+  data = {
+    "setup.sh" = <<-EOF
+#!/bin/bash
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<SQL
+-- Teleport admin user for auto user provisioning
+CREATE USER IF NOT EXISTS 'teleport-admin'@'%' REQUIRE SUBJECT '/CN=teleport-admin';
+GRANT SELECT ON mysql.role_edges TO 'teleport-admin'@'%';
+GRANT PROCESS, ROLE_ADMIN, CREATE USER ON *.* TO 'teleport-admin'@'%';
+CREATE DATABASE IF NOT EXISTS \`teleport\`;
+GRANT ALTER ROUTINE, CREATE ROUTINE, EXECUTE ON \`teleport\`.* TO 'teleport-admin'@'%';
 
-    -- Roles for auto-provisioned users
-    CREATE ROLE IF NOT EXISTS 'admin';
-    GRANT ALL PRIVILEGES ON \`teleport_db\`.* TO 'admin';
-    CREATE ROLE IF NOT EXISTS 'read_only';
-    GRANT SELECT ON \`teleport_db\`.* TO 'read_only';
+-- Roles for auto-provisioned users
+CREATE ROLE IF NOT EXISTS 'admin';
+GRANT ALL PRIVILEGES ON \`teleport_db\`.* TO 'admin';
+CREATE ROLE IF NOT EXISTS 'read_only';
+GRANT SELECT ON \`teleport_db\`.* TO 'read_only';
 
-    -- Grant teleport-admin the ability to assign roles
-    GRANT 'admin' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
-    GRANT 'read_only' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
+-- Grant teleport-admin the ability to assign roles
+GRANT 'admin' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
+GRANT 'read_only' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
 
-    -- Legacy static user
-    CREATE USER IF NOT EXISTS 'developer'@'%' REQUIRE SUBJECT '/CN=developer';
-    GRANT ALL PRIVILEGES ON *.* TO 'developer'@'%';
+-- Legacy static user
+CREATE USER IF NOT EXISTS 'developer'@'%' REQUIRE SUBJECT '/CN=developer';
+GRANT ALL PRIVILEGES ON *.* TO 'developer'@'%';
 
-    -- Seed data
-    USE teleport_db;
+-- Seed data
+USE teleport_db;
 
-    ${local.seed_movies_mysql_sql}
-    SQL
-  EOF
+${local.seed_movies_mysql_sql}
+SQL
+    EOF
+  }
+}
 
-  chart_values = <<-EOF
-    image:
-      registry: docker.io
-      repository: bitnamilegacy/mysql
-      tag: 9.4.0-debian-12-r1
-    primary:
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-      extraVolumes:
-        - name: custom-init
-          configMap:
-            name: ${var.resource_prefix}mysql-custom-init
-            defaultMode: 0755
-      extraVolumeMounts:
-        - name: custom-init
-          mountPath: /docker-entrypoint-initdb.d
-      persistence:
-        enabled: false
-      extraFlags: "--require-secure-transport=ON --ssl-ca=/opt/bitnami/mysql/certs/ca.crt --ssl-cert=/opt/bitnami/mysql/certs/tls.crt --ssl-key=/opt/bitnami/mysql/certs/tls.key"
-    auth:
-      database: teleport_db
-      username: admin
-      password: ${random_password.mysql.result}
-    tls:
-      enabled: true
-      existingSecret: ${var.resource_prefix}mysql-tls
-      certFilename: tls.crt
-      certKeyFilename: tls.key
-      certCAFilename: ca.crt
-  EOF
+resource "kubernetes_config_map" "mysql_config" {
+  metadata {
+    name      = "${var.resource_prefix}mysql-config"
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+  }
+  data = {
+    "custom.cnf" = <<-CNF
+[mysqld]
+require_secure_transport = ON
+ssl_ca   = /certs/ca.crt
+ssl_cert = /certs/tls.crt
+ssl_key  = /certs/tls.key
+# Memory optimizations for demo cluster
+innodb_buffer_pool_size = 32M
+innodb_log_buffer_size = 4M
+max_connections = 20
+table_open_cache = 200
+    CNF
+  }
+}
 
-  teleport_role_spec = {
-    options = {
-      create_db_user_mode = "keep"
+resource "kubernetes_stateful_set" "mysql" {
+  metadata {
+    name      = "${var.resource_prefix}mysql"
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+    labels    = { app = "${var.resource_prefix}mysql" }
+  }
+  spec {
+    replicas     = 1
+    service_name = "${var.resource_prefix}mysql"
+    selector {
+      match_labels = { app = "${var.resource_prefix}mysql" }
     }
-    allow = {
-      db_labels = {
-        db = "mysql"
+    template {
+      metadata {
+        labels = { app = "${var.resource_prefix}mysql" }
       }
-      db_names = ["teleport_db", "*"]
-      db_roles = ["admin", "read_only"]
+      spec {
+        security_context {
+          fs_group = 999
+        }
+        container {
+          name  = "mysql"
+          image = "mysql:9.4"
+          port {
+            container_port = 3306
+            name           = "mysql"
+          }
+          env {
+            name  = "MYSQL_ROOT_PASSWORD"
+            value = random_password.mysql.result
+          }
+          env {
+            name  = "MYSQL_DATABASE"
+            value = "teleport_db"
+          }
+          env {
+            name  = "MYSQL_USER"
+            value = "admin"
+          }
+          env {
+            name  = "MYSQL_PASSWORD"
+            value = random_password.mysql.result
+          }
+          volume_mount {
+            name       = "certs"
+            mount_path = "/certs"
+            read_only  = true
+          }
+          volume_mount {
+            name       = "config"
+            mount_path = "/etc/mysql/conf.d/custom.cnf"
+            sub_path   = "custom.cnf"
+          }
+          volume_mount {
+            name       = "init"
+            mount_path = "/docker-entrypoint-initdb.d"
+          }
+          volume_mount {
+            name       = "data"
+            mount_path = "/var/lib/mysql"
+          }
+          resources {
+            requests = {
+              cpu    = "50m"
+              memory = "128Mi"
+            }
+            limits = {
+              memory = "512Mi"
+            }
+          }
+          readiness_probe {
+            exec {
+              command = ["mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${random_password.mysql.result}"]
+            }
+            initial_delay_seconds = 15
+            period_seconds        = 10
+          }
+          liveness_probe {
+            exec {
+              command = ["mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${random_password.mysql.result}"]
+            }
+            initial_delay_seconds = 30
+            period_seconds        = 10
+          }
+        }
+        volume {
+          name = "certs"
+          secret {
+            secret_name  = "${var.resource_prefix}mysql-tls"
+            default_mode = "0640"
+          }
+        }
+        volume {
+          name = "config"
+          config_map {
+            name = kubernetes_config_map.mysql_config.metadata[0].name
+          }
+        }
+        volume {
+          name = "init"
+          config_map {
+            name         = kubernetes_config_map.mysql_custom_init.metadata[0].name
+            default_mode = "0755"
+          }
+        }
+        volume {
+          name = "data"
+          empty_dir {}
+        }
+      }
     }
   }
 }
 
-moved {
-  from = module.mysql_tls
-  to   = module.mysql.module.tls
+resource "kubernetes_service" "mysql" {
+  metadata {
+    name      = "${var.resource_prefix}mysql"
+    namespace = kubernetes_namespace_v1.teleport_cluster.metadata[0].name
+  }
+  spec {
+    selector = { app = "${var.resource_prefix}mysql" }
+    port {
+      port        = 3306
+      target_port = 3306
+      name        = "mysql"
+    }
+  }
+}
+
+resource "kubectl_manifest" "teleport_role_mysql" {
+  yaml_body = yamlencode({
+    apiVersion = "resources.teleport.dev/v1"
+    kind       = "TeleportRoleV7"
+    metadata = {
+      name      = "${var.resource_prefix}mysql"
+      namespace = helm_release.teleport_cluster.namespace
+    }
+    spec = {
+      options = {
+        create_db_user_mode = "keep"
+      }
+      allow = {
+        db_labels = {
+          db = "mysql"
+        }
+        db_names = ["teleport_db", "*"]
+        db_roles = ["admin", "read_only"]
+      }
+    }
+  })
 }
 
 moved {
-  from = kubernetes_config_map.mysql_custom_init
-  to   = module.mysql.kubernetes_config_map.init
+  from = module.mysql.module.tls
+  to   = module.mysql_tls
 }
 
 moved {
-  from = helm_release.mysql
-  to   = module.mysql.helm_release.db
+  from = module.mysql.kubernetes_config_map.init
+  to   = kubernetes_config_map.mysql_custom_init
 }
 
 moved {
-  from = kubectl_manifest.teleport_role_mysql
-  to   = module.mysql.kubectl_manifest.teleport_role
+  from = module.mysql.kubectl_manifest.teleport_role
+  to   = kubectl_manifest.teleport_role_mysql
 }

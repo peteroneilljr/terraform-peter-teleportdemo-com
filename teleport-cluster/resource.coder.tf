@@ -8,7 +8,7 @@ resource "kubernetes_secret_v1" "coder_db_url" {
     namespace = kubernetes_namespace_v1.coder.metadata[0].name
   }
   data = {
-    url = "postgres://coder:${random_password.coder_db.result}@${module.postgres.helm_release_name}-postgresql.${module.postgres.helm_release_namespace}.svc.cluster.local:5432/coder?sslmode=require"
+    url = "postgres://coder:${random_password.coder_db.result}@${kubernetes_service.postgres.metadata[0].name}.${kubernetes_service.postgres.metadata[0].namespace}.svc.cluster.local:5432/coder?sslmode=require"
   }
 }
 
