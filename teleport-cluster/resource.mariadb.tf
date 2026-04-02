@@ -20,7 +20,9 @@ resource "kubernetes_config_map" "mariadb_custom_init" {
 #!/bin/bash
 mysql -u root -p"$MARIADB_ROOT_PASSWORD" <<SQL
 -- Teleport admin user for auto user provisioning
-CREATE USER IF NOT EXISTS 'teleport-admin'@'%' REQUIRE SUBJECT '/CN=teleport-admin';
+-- Use REQUIRE X509 instead of REQUIRE SUBJECT because MariaDB 11 does strict
+-- byte-for-byte DN comparison that mismatches Teleport's Go x509 cert format.
+CREATE USER IF NOT EXISTS 'teleport-admin'@'%' REQUIRE X509;
 GRANT SELECT ON mysql.roles_mapping TO 'teleport-admin'@'%';
 GRANT UPDATE ON mysql.* TO 'teleport-admin'@'%';
 GRANT SELECT ON *.* TO 'teleport-admin'@'%';
@@ -39,7 +41,7 @@ GRANT 'admin' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
 GRANT 'read_only' TO 'teleport-admin'@'%' WITH ADMIN OPTION;
 
 -- Legacy static user
-CREATE USER IF NOT EXISTS 'developer'@'%' REQUIRE SUBJECT '/CN=developer';
+CREATE USER IF NOT EXISTS 'developer'@'%' REQUIRE X509;
 GRANT ALL PRIVILEGES ON *.* TO 'developer'@'%';
 
 -- Seed data

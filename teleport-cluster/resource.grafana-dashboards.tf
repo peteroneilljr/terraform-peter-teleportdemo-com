@@ -635,3 +635,121 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_teleport" {
     })
   }
 }
+
+resource "kubernetes_config_map_v1" "grafana_dashboard_logs" {
+  metadata {
+    name      = "grafana-dashboard-logs"
+    namespace = kubernetes_namespace_v1.apps.metadata[0].name
+    labels = {
+      grafana_dashboard = "1"
+    }
+  }
+
+  data = {
+    "teleport-logs.json" = jsonencode({
+      title         = "Teleport Logs"
+      uid           = "teleport-logs"
+      schemaVersion = 38
+      version       = 1
+      refresh       = "30s"
+      time = {
+        from = "now-1h"
+        to   = "now"
+      }
+      timepicker = {}
+      templating = {
+        list = [
+          {
+            name       = "namespace"
+            type       = "query"
+            datasource = { type = "loki", uid = "loki" }
+            query      = "label_values(namespace)"
+            current = {
+              text  = "psh-cluster"
+              value = "psh-cluster"
+            }
+            refresh = 2
+            sort    = 1
+          },
+          {
+            name       = "pod"
+            type       = "query"
+            datasource = { type = "loki", uid = "loki" }
+            query      = "label_values({namespace=\"$namespace\"}, pod)"
+            current = {
+              text  = "All"
+              value = "$__all"
+            }
+            includeAll = true
+            allValue   = ".*"
+            refresh    = 2
+            sort       = 1
+          }
+        ]
+      }
+      panels = [
+        {
+          id    = 1
+          type  = "timeseries"
+          title = "Log Volume"
+          gridPos = {
+            x = 0
+            y = 0
+            w = 24
+            h = 6
+          }
+          datasource = { type = "loki", uid = "loki" }
+          targets = [
+            {
+              expr     = "sum(count_over_time({namespace=\"$namespace\", pod=~\"$pod\"}[1m])) by (pod)"
+              refId    = "A"
+              legendFormat = "{{ pod }}"
+            }
+          ]
+          fieldConfig = {
+            defaults = {
+              custom = {
+                lineWidth   = 1
+                fillOpacity = 20
+                stacking    = { mode = "normal" }
+              }
+              unit = "short"
+            }
+          }
+          options = {
+            legend = { displayMode = "table", placement = "right" }
+            tooltip = { mode = "multi" }
+          }
+        },
+        {
+          id    = 2
+          type  = "logs"
+          title = "Logs"
+          gridPos = {
+            x = 0
+            y = 6
+            w = 24
+            h = 18
+          }
+          datasource = { type = "loki", uid = "loki" }
+          targets = [
+            {
+              expr  = "{namespace=\"$namespace\", pod=~\"$pod\"}"
+              refId = "A"
+            }
+          ]
+          options = {
+            showTime       = true
+            showLabels     = true
+            showCommonLabels = false
+            wrapLogMessage = true
+            prettifyLogMessage = false
+            enableLogDetails = true
+            sortOrder      = "Descending"
+            dedupStrategy  = "none"
+          }
+        }
+      ]
+    })
+  }
+}

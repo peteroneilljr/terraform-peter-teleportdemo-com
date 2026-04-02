@@ -2,7 +2,7 @@ resource "kubernetes_namespace_v1" "apps" {
   metadata {
     name = "psh-apps"
     labels = {
-      "pod-security.kubernetes.io/enforce" = "baseline"
+      "pod-security.kubernetes.io/enforce" = "privileged"
     }
   }
 }
@@ -16,7 +16,7 @@ resource "helm_release" "grafana" {
 
   wait = true
 
-  depends_on = [helm_release.prometheus]
+  depends_on = [helm_release.prometheus, helm_release.loki]
 
   values = [<<EOF
   rbac:
@@ -45,6 +45,12 @@ resource "helm_release" "grafana" {
           url: http://prometheus-server.psh-apps.svc.cluster.local
           access: proxy
           isDefault: true
+        - name: Loki
+          uid: loki
+          type: loki
+          url: http://loki.psh-apps.svc.cluster.local:3100
+          access: proxy
+          isDefault: false
   sidecar:
     dashboards:
       enabled: true
