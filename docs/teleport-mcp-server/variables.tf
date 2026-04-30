@@ -6,7 +6,7 @@ variable "teleport_cluster_fqdn" {
 variable "teleport_version" {
   description = "Teleport version to deploy. Must match the version running in your cluster. Used for the tbot sidecar image and the tctl binary download."
   type        = string
-  default     = "18.7.0"
+  default     = "18.7.6"
 }
 
 variable "namespace" {

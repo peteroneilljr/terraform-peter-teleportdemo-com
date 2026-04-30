@@ -1,6 +1,6 @@
 teleport:
   proxyAddr: ""                    # Required: e.g. peter.teleportdemo.com:443
-  version: "18.7.3"
+  version: "18.7.6"
   botTokenName: "claude-code-bot"   # Token for tbot (Bot role)
   nodeTokenName: "claude-code-node" # Token for SSH node (Node role)
   nodeName: ""                      # Auto-generated if empty: claude-code-<release>

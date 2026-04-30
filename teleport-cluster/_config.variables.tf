@@ -42,7 +42,7 @@ variable "teleport_install_CRDs" {
 variable "teleport_version" {
   description = "full version of teleport (e.g. 17.4.0)"
   type        = string
-  default     = "18.7.3"
+  default     = "18.7.6"
 }
 
 # ---------------------------------------------------------------------------- #
