@@ -54,7 +54,7 @@ resource "kubectl_manifest" "sso_github" {
               "${var.resource_prefix}grafana",
               "${var.resource_prefix}swagger-ui",
               "${var.resource_prefix}coder",
-              # SSH (one node, visitor user)
+              # SSH (one node, login = GitHub username via {{external.username}})
               "${var.resource_prefix}nodes-ro",
               # Session observation
               "${var.resource_prefix}session-observe",
