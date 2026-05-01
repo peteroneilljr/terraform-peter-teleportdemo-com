@@ -133,15 +133,16 @@ resource "kubernetes_deployment_v1" "kibana" {
         labels = { app = "kibana" }
       }
       spec {
-        # Idempotently re-align kibana_system's password with the value baked
-        # into kibana.yml. The Bitnami chart only sets the elastic user's
-        # password on bootstrap; kibana_system stays at a chart-internal
-        # value, so any time the ES cluster is rebuilt from a fresh PVC the
-        # one-shot seed Job's password set is gone and Kibana fails with 401.
-        # Running this on every Kibana pod start is idempotent and self-heals
-        # the cluster after rebuilds — no external trigger required.
+        # Idempotently re-create everything Kibana needs in the ES security
+        # index on every pod start. The Bitnami chart only bootstraps the
+        # `elastic` superuser; kibana_system's password and the anonymous
+        # user/role used by Kibana's anonymous auth provider all live in
+        # the ES security index, which is wiped along with the PVC any time
+        # the ES cluster is rebuilt. The one-shot seed Job that originally
+        # set these up is `Complete` and never re-runs. Doing it here on
+        # every Kibana pod start is idempotent and self-heals after rebuilds.
         init_container {
-          name    = "align-kibana-system-password"
+          name    = "align-kibana-auth"
           image   = "curlimages/curl:latest"
           command = ["/bin/sh", "-c", <<-SCRIPT
             set -e
@@ -150,11 +151,24 @@ resource "kubernetes_deployment_v1" "kibana" {
               echo "Waiting for Elasticsearch..."
               sleep 5
             done
+            # 1. Align kibana_system password with kibana.yml.
             curl -ksf -u "elastic:$ELASTIC_PASSWORD" \
               -X POST "$ES_URL/_security/user/kibana_system/_password" \
               -H "Content-Type: application/json" \
               -d "{\"password\":\"$ELASTIC_PASSWORD\"}"
             echo "kibana_system password aligned"
+            # 2. Re-create kibana_anonymous role (read-only browse).
+            curl -ksf -u "elastic:$ELASTIC_PASSWORD" \
+              -X PUT "$ES_URL/_security/role/kibana_anonymous" \
+              -H "Content-Type: application/json" \
+              -d '{"cluster":["monitor"],"indices":[{"names":["*"],"privileges":["read","view_index_metadata"]}],"applications":[{"application":"kibana-.kibana","privileges":["feature_discover.all","feature_dashboard.all","feature_visualize.all"],"resources":["*"]}]}'
+            echo "kibana_anonymous role aligned"
+            # 3. Re-create anonymous_user (matches kibana.yml anonymous provider creds).
+            curl -ksf -u "elastic:$ELASTIC_PASSWORD" \
+              -X POST "$ES_URL/_security/user/anonymous_user" \
+              -H "Content-Type: application/json" \
+              -d '{"password":"anonymous_pass","roles":["kibana_anonymous"],"full_name":"Teleport User"}'
+            echo "anonymous_user aligned"
           SCRIPT
           ]
           env {
