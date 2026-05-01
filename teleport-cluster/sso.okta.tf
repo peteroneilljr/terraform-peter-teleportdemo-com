@@ -22,6 +22,7 @@ resource "kubectl_manifest" "sso_okta" {
               "reviewer",
               "${var.resource_prefix}session-moderate",
               "${var.resource_prefix}access-list-admin",
+              "${var.resource_prefix}aws-admin",
             ]
           }
         ]
