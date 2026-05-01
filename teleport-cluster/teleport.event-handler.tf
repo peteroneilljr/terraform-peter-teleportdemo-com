@@ -636,9 +636,26 @@ eventHandler:
   timeout: "10s"
   batch: 20
   windowSize: "24h"
+# Use an emptyDir for the plugin's checkpoint storage instead of the
+# chart's built-in EBS PVC. The chart's PVC is RWO + WaitForFirstConsumer,
+# so the PV gets pinned to whichever AZ schedules the first consumer. EKS
+# node-group churn (blue/green rolls) routinely removes nodes from that AZ,
+# leaving the Recreate-strategy pod unschedulable on every Helm upgrade.
+# The plugin's checkpoint is ~1 KiB of cursor state; on restart it resumes
+# from "now", losing only events from the restart window. Acceptable for
+# this demo cluster.
+#
+# Note: a volume MUST be mounted at storagePath because the parent
+# /var/lib/teleport/plugins/event-handler is occupied by the (read-only)
+# fluentd-certificate secret mount; without an overlay there, mkdir fails.
 persistentVolumeClaim:
-  enabled: true
-  size: "1Gi"
+  enabled: false
+volumes:
+  - name: storage
+    emptyDir: {}
+volumeMounts:
+  - name: storage
+    mountPath: "/var/lib/teleport/plugins/event-handler/storage"
 tbot:
   enabled: true
   clusterName: "${local.teleport_cluster_fqdn}"
