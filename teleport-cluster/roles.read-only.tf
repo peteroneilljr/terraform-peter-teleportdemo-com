@@ -256,10 +256,11 @@ resource "kubectl_manifest" "teleport_role_nodes_ro" {
         create_host_user_default_shell = "/bin/bash"
       }
       allow = {
-        # Use the SSO username trait so each GitHub user lands on the host
-        # under their own login (auto-created via create_host_user_mode=keep)
-        # rather than sharing a single "visitor" account.
-        logins = ["{{external.username}}"]
+        # GitHub connector populates the user's GitHub login into the
+        # `logins` trait (not `username`), so each GitHub user lands on the
+        # host under their own login (auto-created via create_host_user_mode
+        # =keep) rather than sharing a single "visitor" account.
+        logins = ["{{external.logins}}"]
         node_labels = {
           hostname = "ubuntu2404"
         }
