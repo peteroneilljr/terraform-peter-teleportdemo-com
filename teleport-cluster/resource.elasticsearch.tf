@@ -133,6 +133,36 @@ resource "kubernetes_deployment_v1" "kibana" {
         labels = { app = "kibana" }
       }
       spec {
+        # Idempotently re-align kibana_system's password with the value baked
+        # into kibana.yml. The Bitnami chart only sets the elastic user's
+        # password on bootstrap; kibana_system stays at a chart-internal
+        # value, so any time the ES cluster is rebuilt from a fresh PVC the
+        # one-shot seed Job's password set is gone and Kibana fails with 401.
+        # Running this on every Kibana pod start is idempotent and self-heals
+        # the cluster after rebuilds — no external trigger required.
+        init_container {
+          name    = "align-kibana-system-password"
+          image   = "curlimages/curl:latest"
+          command = ["/bin/sh", "-c", <<-SCRIPT
+            set -e
+            ES_URL="https://elasticsearch-master:9200"
+            until curl -ksf -u "elastic:$ELASTIC_PASSWORD" "$ES_URL/_cluster/health" >/dev/null; do
+              echo "Waiting for Elasticsearch..."
+              sleep 5
+            done
+            curl -ksf -u "elastic:$ELASTIC_PASSWORD" \
+              -X POST "$ES_URL/_security/user/kibana_system/_password" \
+              -H "Content-Type: application/json" \
+              -d "{\"password\":\"$ELASTIC_PASSWORD\"}"
+            echo "kibana_system password aligned"
+          SCRIPT
+          ]
+          env {
+            name  = "ELASTIC_PASSWORD"
+            value = random_password.elasticsearch.result
+          }
+        }
+
         container {
           name  = "kibana"
           image = "docker.elastic.co/kibana/kibana:8.5.1"
