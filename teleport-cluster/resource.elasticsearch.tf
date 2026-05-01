@@ -158,10 +158,15 @@ resource "kubernetes_deployment_v1" "kibana" {
               -d "{\"password\":\"$ELASTIC_PASSWORD\"}"
             echo "kibana_system password aligned"
             # 2. Re-create kibana_anonymous role (read-only browse).
+            # Must match the role definition in teleport.event-handler.tf's
+            # event-handler-es-seed Job exactly — that Job also writes this
+            # role with an additional audit-events-* indices entry, and we
+            # want both writers to converge on the same definition so the
+            # role doesn't ping-pong between them on every Kibana restart.
             curl -ksf -u "elastic:$ELASTIC_PASSWORD" \
               -X PUT "$ES_URL/_security/role/kibana_anonymous" \
               -H "Content-Type: application/json" \
-              -d '{"cluster":["monitor"],"indices":[{"names":["*"],"privileges":["read","view_index_metadata"]}],"applications":[{"application":"kibana-.kibana","privileges":["feature_discover.all","feature_dashboard.all","feature_visualize.all"],"resources":["*"]}]}'
+              -d '{"cluster":["monitor"],"indices":[{"names":["*"],"privileges":["read","view_index_metadata"]},{"names":["audit-events-*"],"privileges":["read","view_index_metadata"]}],"applications":[{"application":"kibana-.kibana","privileges":["feature_discover.all","feature_dashboard.all","feature_visualize.all"],"resources":["*"]}]}'
             echo "kibana_anonymous role aligned"
             # 3. Re-create anonymous_user (matches kibana.yml anonymous provider creds).
             curl -ksf -u "elastic:$ELASTIC_PASSWORD" \
