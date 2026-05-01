@@ -32,8 +32,16 @@ resource "helm_release" "elasticsearch" {
   timeout = 900
 
   values = [yamlencode({
-    # Single-node demo cluster
-    replicas = 1
+    # 2-replica HA cluster, one pod per AZ. Sized to match the 2-node / 2-AZ
+    # cluster topology — adding a 3rd ES pod on this topology forces two pods
+    # onto one node, which is a worse failure domain than 2 pods on 2 nodes
+    # (loss of the doubled-up node would break ES master quorum). Bump to 3
+    # when the nodegroup grows past 2 nodes. Index-level redundancy comes
+    # from number_of_replicas=1 in the seed script, so losing one pod does
+    # not lose data.
+    replicas                = 2
+    antiAffinity            = "soft"
+    antiAffinityTopologyKey = "topology.kubernetes.io/zone"
     # Minimal resources for demo
     resources = {
       requests = {
@@ -44,7 +52,8 @@ resource "helm_release" "elasticsearch" {
         memory = "2Gi"
       }
     }
-    # Persistence
+    # Persistence — one EBS PV per pod, each pinned to its pod's AZ via the
+    # WaitForFirstConsumer storage class.
     volumeClaimTemplate = {
       accessModes = ["ReadWriteOnce"]
       resources = {
@@ -53,10 +62,6 @@ resource "helm_release" "elasticsearch" {
         }
       }
     }
-    # Single replica — chart auto-sets cluster.initial_master_nodes to this pod.
-    # Do NOT set discovery.type=single-node, as it conflicts with the chart's
-    # cluster.initial_master_nodes env var.
-    minimumMasterNodes = 1
     # Security — set elastic password via env
     extraEnvs = [
       {
@@ -68,14 +73,9 @@ resource "helm_release" "elasticsearch" {
         value = "true"
       },
     ]
-    # Explicit esConfig — do NOT set discovery.type=single-node, as it conflicts
-    # with the chart's cluster.initial_master_nodes env var.
     esConfig = {
       "elasticsearch.yml" = "xpack.security.enabled: true"
     }
-    # Single-node cluster can never reach "green" (no replica target), so
-    # accept "yellow" in the readiness probe to avoid permanent not-ready state.
-    clusterHealthCheckParams = "wait_for_status=yellow&timeout=1s"
     # Disable tests
     tests = {
       enabled = false
@@ -209,7 +209,9 @@ resource "kubernetes_config_map" "elasticsearch_seed" {
       echo "Setting kibana_system password..."
       curl -ksf -u "elastic:$ES_PASSWORD" -X POST "$ES_URL/_security/user/kibana_system/_password" -H "Content-Type: application/json" -d "{\"password\":\"$ES_PASSWORD\"}" || true
       echo "Creating top_movies index..."
-      curl -ksf -u "elastic:$ES_PASSWORD" -X PUT "$ES_URL/top_movies" -H "Content-Type: application/json" -d '{"mappings":{"properties":{"rank":{"type":"integer"},"title":{"type":"text","fields":{"keyword":{"type":"keyword"}}},"year":{"type":"integer"},"director":{"type":"text","fields":{"keyword":{"type":"keyword"}}}}}}'  || true
+      # number_of_replicas=1 ensures shards are duplicated to a second node so
+      # losing one ES pod (or its EBS PV) does not lose data.
+      curl -ksf -u "elastic:$ES_PASSWORD" -X PUT "$ES_URL/top_movies" -H "Content-Type: application/json" -d '{"settings":{"number_of_shards":1,"number_of_replicas":1},"mappings":{"properties":{"rank":{"type":"integer"},"title":{"type":"text","fields":{"keyword":{"type":"keyword"}}},"year":{"type":"integer"},"director":{"type":"text","fields":{"keyword":{"type":"keyword"}}}}}}'  || true
       echo "Loading seed data..."
       curl -ksf -u "elastic:$ES_PASSWORD" -X POST "$ES_URL/_bulk" -H "Content-Type: application/x-ndjson" --data-binary @/data/bulk.ndjson
       echo "Seed data loaded. Verifying count..."

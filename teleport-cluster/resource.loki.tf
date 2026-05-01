@@ -28,6 +28,13 @@ loki:
           period: 24h
   limits_config:
     retention_period: 168h
+  # Compactor must be told to enforce the retention_period above; without
+  # retention_enabled the limits_config setting is a no-op and the PVC grows
+  # forever. delete_request_store is required when retention_enabled=true.
+  compactor:
+    working_directory: /var/loki/compactor
+    retention_enabled: true
+    delete_request_store: filesystem
 singleBinary:
   replicas: 1
   resources:
@@ -38,7 +45,7 @@ singleBinary:
       memory: 512Mi
   persistence:
     enabled: true
-    size: 10Gi
+    size: 20Gi
 read:
   replicas: 0
 write:
